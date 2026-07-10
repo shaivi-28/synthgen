@@ -1,0 +1,5 @@
+id: pos_issuer
+name: "Card at POS — Bank as Issuer via NFS"
+status: placeholder
+participant_files: []
+scenarios: []

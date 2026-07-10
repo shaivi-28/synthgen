@@ -1,0 +1,189 @@
+id: cbs_ex3198
+name: "Bank CBS Export (EX3198)"
+description: "Core Banking System transaction export. Fixed-width, 159 chars per record. SQL*Loader FIXED_RECORD_FORMAT."
+encoding: ascii
+line_ending: LF
+record_length: 159
+has_header: false
+has_trailer: false
+filename_pattern: "EX3198_{DDMMYYYY}"
+
+fields:
+  - name: ACCT_NO
+    position_start: 1
+    position_end: 16
+    length: 16
+    type: character
+    pad: " "
+    pad_direction: right
+    description: "Account number"
+    mandatory: true
+
+  - name: _sep1
+    position_start: 17
+    position_end: 17
+    length: 1
+    type: literal
+    value: " "
+
+  - name: JOURNAL_NO
+    position_start: 18
+    position_end: 26
+    length: 9
+    type: numeric
+    pad: " "
+    pad_direction: left
+    description: "Journal / sequence number"
+    mandatory: true
+
+  - name: _sep2
+    position_start: 27
+    position_end: 27
+    length: 1
+    type: literal
+    value: " "
+
+  - name: AMOUNT
+    position_start: 28
+    position_end: 44
+    length: 17
+    type: signed_amount
+    description: "Transaction amount. Sign prefix + 16 digits. Negative = debit."
+    mandatory: true
+    # Format: -0000000000010000 (leading sign, no decimal, last 2 digits are paise)
+
+  - name: _sep3
+    position_start: 45
+    position_end: 45
+    length: 1
+    type: literal
+    value: " "
+
+  - name: CARD_NUM
+    position_start: 46
+    position_end: 65
+    length: 20
+    type: character
+    pad: " "
+    pad_direction: right
+    description: "Card PAN number (within NARRATIVE field range)"
+    mandatory: false
+
+  - name: TERMINAL_ID
+    position_start: 66
+    position_end: 81
+    length: 16
+    type: character
+    pad: " "
+    pad_direction: right
+    description: "Terminal ID"
+    mandatory: false
+
+  - name: RRN_SEQ_NUM
+    position_start: 82
+    position_end: 93
+    length: 12
+    type: character
+    pad: " "
+    pad_direction: left
+    description: "Retrieval Reference Number / Sequence number (key link field)"
+    mandatory: true
+
+  - name: _sep4
+    position_start: 94
+    position_end: 96
+    length: 3
+    type: literal
+    value: "   "
+
+  - name: TRAN_CODE
+    position_start: 97
+    position_end: 102
+    length: 6
+    type: character
+    pad: " "
+    pad_direction: right
+    description: "Transaction code"
+    mandatory: true
+
+  - name: _sep5
+    position_start: 103
+    position_end: 103
+    length: 1
+    type: literal
+    value: " "
+
+  - name: TELLER_NO
+    position_start: 104
+    position_end: 119
+    length: 16
+    type: character
+    pad: " "
+    pad_direction: right
+    description: "Teller / process number"
+    mandatory: false
+
+  - name: _sep6
+    position_start: 120
+    position_end: 120
+    length: 1
+    type: literal
+    value: " "
+
+  - name: BRCH_NO
+    position_start: 121
+    position_end: 125
+    length: 5
+    type: character
+    pad: " "
+    pad_direction: right
+    description: "Branch number"
+    mandatory: false
+
+  - name: _sep7
+    position_start: 126
+    position_end: 126
+    length: 1
+    type: literal
+    value: " "
+
+  - name: GE_BRCH_NO
+    position_start: 127
+    position_end: 131
+    length: 5
+    type: character
+    pad: " "
+    pad_direction: right
+    description: "GL / General entity branch number"
+    mandatory: false
+
+  - name: _sep8
+    position_start: 132
+    position_end: 132
+    length: 1
+    type: literal
+    value: " "
+
+  - name: TRAN_DATE
+    position_start: 133
+    position_end: 140
+    length: 8
+    type: date
+    date_format: DDMMYYYY
+    description: "Transaction date"
+    mandatory: true
+
+  - name: _sep9
+    position_start: 141
+    position_end: 141
+    length: 1
+    type: literal
+    value: " "
+
+  - name: BALANCE
+    position_start: 142
+    position_end: 158
+    length: 17
+    type: signed_amount
+    description: "Account balance after transaction"
+    mandatory: true

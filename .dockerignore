@@ -1,0 +1,15 @@
+.git/
+.claude/
+output/
+sample_files/
+templates/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+.python-version
+.gitignore
+README.md
+Procfile

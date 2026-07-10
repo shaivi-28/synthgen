@@ -1,0 +1,3038 @@
+id: idfc_visa_issuer
+name: "Visa Cards Issuer — ATM & POS"
+bank: idfc
+network: VISA
+status: active
+description: >
+  IDFC FIRST Bank as VISA card issuer. Generates 8 files per run:
+  CBSMCW, FSSGL, EPIN DOM/INT, TLF, PTLF, EP747 DOM/INT.
+  All scenarios run in exhaustive mode by default.
+
+# ── Scenario Groups ────────────────────────────────────────────────────
+# A  — Perfect Match (OK)
+# B  — Single Full Reversal Same Day
+# C  — Reversal on Different Day
+# D  — Partial Reversal
+# E  — Multiple Reversals
+# F  — Installment / Split Billing
+# G  — Disputes / Chargeback
+# H  — Fee Transactions
+# I  — Amount Mismatches
+# J  — Date Mismatches (J01-J14)
+# K  — Duplicates & Double Debit
+# L  — Missing Files (L01-L18)
+# M  — Crossfire / Direction Mismatch (M01-M09)
+
+participant_files:
+  - id: epin
+    name: EPIN
+    description: "VISA T&E Clearing File (settlement flag 8=DOM, 0=INT)"
+  - id: tlf
+    name: TLF
+    description: "ATM Switch Transaction Log (864-char × 4 records)"
+  - id: ptlf
+    name: PTLF
+    description: "POS Switch Transaction Log (~860-char × 2 records)"
+  - id: cbsmcw
+    name: CBSMCW
+    description: "CBS Card-Level Transaction File (pipe-delimited)"
+  - id: fssgl
+    name: FSSGL
+    description: "CBS GL Settlement File (pipe-delimited)"
+  - id: ep747_dom
+    name: "EP747 DOM"
+    description: "VISA VSS Settlement Report — Domestic"
+  - id: ep747_int
+    name: "EP747 INT"
+    description: "VISA VSS Settlement Report — International"
+
+linkage_keys:
+  primary: rrn
+  secondary: auth_code
+  tertiary: card_pan
+
+scenarios:
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP A — PERFECT MATCH
+  # All files present; amounts and dates exactly aligned.
+  # Outcome: Reconciled OK
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: a01_dom_atm_ok
+    code: A01
+    group: A
+    name: "DOM ATM — Perfect Match"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: OK
+    is_ok: true
+    weight: 20
+
+  - id: a02_int_atm_ok
+    code: A02
+    group: A
+    name: "INT ATM — Perfect Match"
+    tran_type: ATM
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: OK
+    is_ok: true
+    weight: 15
+
+  - id: a03_dom_pos_ok
+    code: A03
+    group: A
+    name: "DOM POS — Perfect Match"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    action: OK
+    is_ok: true
+    weight: 15
+
+  - id: a04_int_pos_ok
+    code: A04
+    group: A
+    name: "INT POS — Perfect Match"
+    tran_type: POS
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    action: OK
+    is_ok: true
+    weight: 12
+
+  - id: a05_dom_mc_ok
+    code: A05
+    group: A
+    name: "DOM Merchandise Credit — Perfect Match"
+    tran_type: MERCH_CR
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    action: OK
+    is_ok: true
+    weight: 8
+
+  - id: a06_int_mc_ok
+    code: A06
+    group: A
+    name: "INT Merchandise Credit — Perfect Match"
+    tran_type: MERCH_CR
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    action: OK
+    is_ok: true
+    weight: 5
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP B — SINGLE FULL REVERSAL SAME DAY
+  # All files carry the reversal (or purchase+reversal) on the same date.
+  # Outcome: Reconciled OK
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: b01_dom_atm_rev
+    code: B01
+    group: B
+    name: "DOM ATM — Full Reversal Only (same day)"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: -1, tlf: -1, cbsmcw: -1, fssgl: -1}
+    action: OK_REVERSAL
+    is_ok: true
+    weight: 3
+
+  - id: b02_int_atm_rev
+    code: B02
+    group: B
+    name: "INT ATM — Full Reversal Only (same day)"
+    tran_type: ATM
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: -1, tlf: -1, cbsmcw: -1, fssgl: -1}
+    action: OK_REVERSAL
+    is_ok: true
+    weight: 2
+
+  - id: b03_dom_pos_rev
+    code: B03
+    group: B
+    name: "DOM POS — Full Reversal Only (same day)"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: -1, ptlf: -1, cbsmcw: -1, fssgl: -1}
+    action: OK_REVERSAL
+    is_ok: true
+    weight: 3
+
+  - id: b04_int_pos_rev
+    code: B04
+    group: B
+    name: "INT POS — Full Reversal Only (same day)"
+    tran_type: POS
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: -1, ptlf: -1, cbsmcw: -1, fssgl: -1}
+    action: OK_REVERSAL
+    is_ok: true
+    weight: 2
+
+  - id: b05_dom_atm_fwd_rev
+    code: B05
+    group: B
+    name: "DOM ATM — Purchase + Full Reversal (same batch)"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 0, tlf: 0, cbsmcw: 0, fssgl: 0}
+    action: OK_WITH_REVERSAL
+    is_ok: true
+    weight: 3
+
+  - id: b06_int_atm_fwd_rev
+    code: B06
+    group: B
+    name: "INT ATM — Purchase + Full Reversal (same batch)"
+    tran_type: ATM
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: 0, tlf: 0, cbsmcw: 0, fssgl: 0}
+    action: OK_WITH_REVERSAL
+    is_ok: true
+    weight: 2
+
+  - id: b07_dom_pos_fwd_rev
+    code: B07
+    group: B
+    name: "DOM POS — Purchase + Full Reversal (same batch)"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 0, ptlf: 0, cbsmcw: 0, fssgl: 0}
+    action: OK_WITH_REVERSAL
+    is_ok: true
+    weight: 3
+
+  - id: b08_int_pos_fwd_rev
+    code: B08
+    group: B
+    name: "INT POS — Purchase + Full Reversal (same batch)"
+    tran_type: POS
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: 0, ptlf: 0, cbsmcw: 0, fssgl: 0}
+    action: OK_WITH_REVERSAL
+    is_ok: true
+    weight: 2
+
+  - id: b09_dom_mc_rev
+    code: B09
+    group: B
+    name: "DOM Merchandise Credit — Reversal Only (same day)"
+    tran_type: MERCH_CR
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: -1, ptlf: -1, cbsmcw: -1, fssgl: -1}
+    action: OK_REVERSAL
+    is_ok: true
+    weight: 2
+
+  - id: b10_dom_mc_fwd_rev
+    code: B10
+    group: B
+    name: "DOM Merchandise Credit — Credit + Reversal (same batch)"
+    tran_type: MERCH_CR
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 0, ptlf: 0, cbsmcw: 0, fssgl: 0}
+    action: OK_WITH_REVERSAL
+    is_ok: true
+    weight: 1
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP C — REVERSAL ON DIFFERENT DAY
+  # Reversal is processed/posted on a different calendar date from
+  # the original purchase or from other files.
+  # Outcome: DATE_MISMATCH (exception)
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: c01_dom_atm_rev_cbs_d1
+    code: C01
+    group: C
+    name: "DOM ATM — Reversal CBS Date D+1 (EPIN/TLF on D)"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: -1, tlf: -1, cbsmcw: -1, fssgl: -1}
+    date_delta: {cbsmcw: 1, fssgl: 1}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 6
+
+  - id: c02_dom_pos_rev_cbs_d1
+    code: C02
+    group: C
+    name: "DOM POS — Reversal CBS Date D+1 (EPIN/PTLF on D)"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: -1, ptlf: -1, cbsmcw: -1, fssgl: -1}
+    date_delta: {cbsmcw: 1, fssgl: 1}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 6
+
+  - id: c03_int_atm_rev_cbs_d1
+    code: C03
+    group: C
+    name: "INT ATM — Reversal CBS Date D+1"
+    tran_type: ATM
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: -1, tlf: -1, cbsmcw: -1, fssgl: -1}
+    date_delta: {cbsmcw: 1, fssgl: 1}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: c04_int_pos_rev_cbs_d1
+    code: C04
+    group: C
+    name: "INT POS — Reversal CBS Date D+1"
+    tran_type: POS
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: -1, ptlf: -1, cbsmcw: -1, fssgl: -1}
+    date_delta: {cbsmcw: 1, fssgl: 1}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: c05_dom_pos_rev_cbs_d3
+    code: C05
+    group: C
+    name: "DOM POS — Reversal CBS Date D+3 (very late posting)"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: -1, ptlf: -1, cbsmcw: -1, fssgl: -1}
+    date_delta: {cbsmcw: 3, fssgl: 3}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: c06_dom_atm_rev_epin_d1
+    code: C06
+    group: C
+    name: "DOM ATM — Reversal EPIN Date D+1 (CBS/TLF on D)"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: -1, tlf: -1, cbsmcw: -1, fssgl: -1}
+    date_delta: {epin: 1}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 4
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP D — PARTIAL REVERSAL
+  # Reversal amount is different (less or more) than the original
+  # purchase amount. CBS has the reversal; EPIN/switch have the
+  # original forward transaction for comparison.
+  # Outcome: PARTIAL_REVERSAL / OVER_REVERSAL (exception)
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: d01_dom_pos_partial_rev_lt
+    code: D01
+    group: D
+    name: "DOM POS — Partial Reversal, Rev Amount < Purchase"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 0, ptlf: 0, cbsmcw: -1, fssgl: -1}
+    amt_delta: {cbsmcw: -15000, fssgl: -15000}
+    action: PARTIAL_REVERSAL
+    is_ok: false
+    weight: 6
+    note: "EPIN/PTLF have fwd+rev at full amount; CBS reversal is 150 rupees less"
+
+  - id: d02_dom_atm_partial_rev_lt
+    code: D02
+    group: D
+    name: "DOM ATM — Partial Reversal, Rev Amount < Purchase"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 0, tlf: 0, cbsmcw: -1, fssgl: -1}
+    amt_delta: {cbsmcw: -15000, fssgl: -15000}
+    action: PARTIAL_REVERSAL
+    is_ok: false
+    weight: 5
+    note: "EPIN/TLF have fwd+rev at full amount; CBS reversal is 150 rupees less"
+
+  - id: d03_int_pos_partial_rev
+    code: D03
+    group: D
+    name: "INT POS — Partial Reversal (FX partial credit)"
+    tran_type: POS
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: 0, ptlf: 0, cbsmcw: -1, fssgl: -1}
+    amt_delta: {cbsmcw: -10000, fssgl: -10000}
+    action: PARTIAL_REVERSAL
+    is_ok: false
+    weight: 4
+
+  - id: d04_dom_pos_over_rev
+    code: D04
+    group: D
+    name: "DOM POS — Over-Reversal (Rev Amount > Purchase)"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 0, ptlf: 0, cbsmcw: -1, fssgl: -1}
+    amt_delta: {cbsmcw: 20000, fssgl: 20000}
+    action: OVER_REVERSAL
+    is_ok: false
+    weight: 4
+    note: "CBS reversal exceeds original purchase amount — bank pays more than charged"
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP E — MULTIPLE REVERSALS
+  # More than one reversal row exists against a single purchase.
+  # Tests various amount-sum combinations and date spreads.
+  # Outcome: MULTI_REVERSAL (exception in most cases)
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: e01_dom_pos_2rev_sum_lt
+    code: E01
+    group: E
+    name: "DOM POS — 2 Reversals in CBS, Sum < Purchase"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: -1, fssgl: -1}
+    amt_delta: {cbsmcw: -35000, fssgl: -35000}
+    dup_files: [cbsmcw, fssgl]
+    action: MULTI_REVERSAL_SUM_LT
+    is_ok: false
+    weight: 5
+    note: "EPIN/PTLF have 1 forward; CBS has 2 reversal rows each at (base-350 rupees). Sum of reversals is less than purchase."
+
+  - id: e02_dom_pos_2rev_sum_eq
+    code: E02
+    group: E
+    name: "DOM POS — 2 Reversals in CBS, Sum = Purchase (split full reversal)"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: -1, fssgl: -1}
+    dup_files: [cbsmcw, fssgl]
+    action: MULTI_REVERSAL_SUM_EQ
+    is_ok: false
+    weight: 5
+    note: "EPIN/PTLF 1 forward; CBS has 2 identical reversal rows — total reversals exceed single purchase"
+
+  - id: e03_dom_pos_2rev_sum_gt
+    code: E03
+    group: E
+    name: "DOM POS — 2 Reversals in CBS, Sum > Purchase (over-reversed)"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: -1, fssgl: -1}
+    amt_delta: {cbsmcw: 10000, fssgl: 10000}
+    dup_files: [cbsmcw, fssgl]
+    action: MULTI_REVERSAL_SUM_GT
+    is_ok: false
+    weight: 5
+    note: "CBS has 2 reversal rows each at (base+100 rupees); sum of reversals exceeds purchase"
+
+  - id: e04_dom_pos_2rev_diff_days
+    code: E04
+    group: E
+    name: "DOM POS — 2 Reversals on Different Days (D and D+1)"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: -1, ptlf: -1, cbsmcw: -1, fssgl: -1}
+    dup_files: [cbsmcw, fssgl]
+    date_delta: {cbsmcw: 1, fssgl: 1}
+    action: MULTI_REVERSAL_DIFF_DAYS
+    is_ok: false
+    weight: 5
+    note: "EPIN/PTLF: reversal on D; CBS: 2 reversal rows on D+1"
+
+  - id: e05_dom_atm_2rev_diff_days
+    code: E05
+    group: E
+    name: "DOM ATM — 2 Reversals on Different Days"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: -1, tlf: -1, cbsmcw: -1, fssgl: -1}
+    dup_files: [cbsmcw, fssgl]
+    date_delta: {cbsmcw: 2, fssgl: 2}
+    action: MULTI_REVERSAL_DIFF_DAYS
+    is_ok: false
+    weight: 4
+
+  - id: e06_int_pos_multi_rev
+    code: E06
+    group: E
+    name: "INT POS — Multiple Reversals Spread Over Dates"
+    tran_type: POS
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: -1, fssgl: -1}
+    dup_files: [cbsmcw, fssgl]
+    date_delta: {cbsmcw: 3, fssgl: 3}
+    action: MULTI_REVERSAL_DIFF_DAYS
+    is_ok: false
+    weight: 4
+    note: "EPIN/PTLF have original forward; CBS has 2 reversal rows dated D+3"
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP F — INSTALLMENT / SPLIT BILLING
+  # Vendor claims the original purchase in multiple installments.
+  # E.g., 1000 split into 500+500. EPIN shows full purchase amount
+  # while CBS shows multiple partial-claim rows.
+  # Outcome: INSTALLMENT (exception — CBS row count or amount differs)
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: f01_dom_pos_inst_2_equal
+    code: F01
+    group: F
+    name: "DOM POS — 2 Equal Installments (500+500 for 1000 purchase)"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {cbsmcw: -25000, fssgl: -25000}
+    dup_files: [cbsmcw, fssgl]
+    action: INSTALLMENT
+    is_ok: false
+    weight: 5
+    note: "EPIN/PTLF: 1 purchase at full amount; CBS: 2 rows each at (base-250 rupees). Models vendor claiming in two installments."
+
+  - id: f02_dom_pos_inst_2_unequal
+    code: F02
+    group: F
+    name: "DOM POS — 2 Unequal Installments (300+700 for 1000)"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {cbsmcw: -30000, fssgl: -30000}
+    dup_files: [cbsmcw, fssgl]
+    action: INSTALLMENT
+    is_ok: false
+    weight: 5
+    note: "CBS has 2 rows at (base-300 rupees) each — unequal split approximation"
+
+  - id: f03_dom_pos_inst_3
+    code: F03
+    group: F
+    name: "DOM POS — 3 Installments (CBS has 3 partial rows)"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {cbsmcw: -33000, fssgl: -33000}
+    dup_files: [cbsmcw, fssgl]
+    action: INSTALLMENT
+    is_ok: false
+    weight: 4
+    note: "3-installment scenario approximated: CBS has 2 reduced-amount rows (framework max)"
+
+  - id: f04_int_pos_inst_diff_days
+    code: F04
+    group: F
+    name: "INT POS — 2 Installments on Different Dates"
+    tran_type: POS
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {cbsmcw: -25000, fssgl: -25000}
+    dup_files: [cbsmcw, fssgl]
+    date_delta: {cbsmcw: 2, fssgl: 2}
+    action: INSTALLMENT
+    is_ok: false
+    weight: 4
+    note: "EPIN/PTLF on D; CBS has 2 partial installment rows on D+2"
+
+  - id: f05_dom_pos_inst_partial_only
+    code: F05
+    group: F
+    name: "DOM POS — CBS Has Only First Installment (partial claim)"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {cbsmcw: -50000, fssgl: -50000}
+    action: INSTALLMENT_PARTIAL
+    is_ok: false
+    weight: 4
+    note: "CBS has only the first installment (500 rupees less); second installment not yet claimed"
+
+  - id: f06_dom_pos_inst_over_purchase
+    code: F06
+    group: F
+    name: "DOM POS — Installments Sum > Purchase (over-billed)"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {cbsmcw: 15000, fssgl: 15000}
+    dup_files: [cbsmcw, fssgl]
+    action: INSTALLMENT_OVER
+    is_ok: false
+    weight: 4
+    note: "CBS has 2 installment rows each at (base+150 rupees); total installments exceed EPIN/PTLF purchase amount"
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP G — DISPUTES / CHARGEBACK
+  # Cardholder disputes a transaction. EPIN carries the reversal
+  # (chargeback filed via VISA); PTLF/TLF has the original auth;
+  # CBS has both the original debit and chargeback credit.
+  # Outcome: DISPUTE (exception)
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: g01_dom_pos_chargeback
+    code: G01
+    group: G
+    name: "DOM POS — Chargeback Raised (EPIN=rev, PTLF=fwd, CBS=fwd+rev)"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: -1, ptlf: 1, cbsmcw: 0, fssgl: 0}
+    action: DISPUTE
+    is_ok: false
+    weight: 6
+    note: "Cardholder raises chargeback: EPIN has reversal (VISA chargeback), PTLF has original auth, CBS has both original debit + chargeback credit"
+
+  - id: g02_int_pos_chargeback
+    code: G02
+    group: G
+    name: "INT POS — International Chargeback"
+    tran_type: POS
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: -1, ptlf: 1, cbsmcw: 0, fssgl: 0}
+    action: DISPUTE
+    is_ok: false
+    weight: 5
+
+  - id: g03_dom_atm_dispute
+    code: G03
+    group: G
+    name: "DOM ATM — Disputed ATM Withdrawal"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: -1, tlf: 1, cbsmcw: 0, fssgl: 0}
+    action: DISPUTE
+    is_ok: false
+    weight: 5
+
+  - id: g04_dom_pos_partial_chargeback
+    code: G04
+    group: G
+    name: "DOM POS — Partial Chargeback (rev amount < original)"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: -1, ptlf: 1, cbsmcw: 0, fssgl: 0}
+    amt_delta: {epin: -15000, cbsmcw: -15000, fssgl: -15000}
+    action: DISPUTE_PARTIAL
+    is_ok: false
+    weight: 5
+    note: "Partial chargeback: EPIN reversal and CBS chargeback are 150 rupees less than original purchase"
+
+  - id: g05_dom_pos_dispute_resolved
+    code: G05
+    group: G
+    name: "DOM POS — Dispute Resolved (all files match, no net reversal)"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    action: DISPUTE_RESOLVED
+    is_ok: true
+    weight: 4
+    note: "Dispute was raised and resolved in favour of merchant; files all carry original forward, no reversal"
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP H — FEE TRANSACTIONS
+  # Interchange, FX markup, GST, or service-charge entries that appear
+  # in FSS GL / EP747 but may not have a 1-for-1 EPIN/switch record.
+  # Outcome: FEE_OK or FEE_MISMATCH
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: h01_dom_atm_fee_ok
+    code: H01
+    group: H
+    name: "DOM ATM — Interchange Fee Transaction (all files match)"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: FEE_OK
+    is_ok: true
+    weight: 5
+    note: "Fee transaction: amount represents interchange fee; all files aligned"
+
+  - id: h02_dom_pos_markup_fee
+    code: H02
+    group: H
+    name: "DOM POS — Markup/Service Charge (all files match)"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    action: FEE_OK
+    is_ok: true
+    weight: 4
+
+  - id: h03_int_atm_fx_fee
+    code: H03
+    group: H
+    name: "INT ATM — Foreign Transaction Fee (CBS has extra fee entry)"
+    tran_type: ATM
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {cbsmcw: 5000, fssgl: 5000}
+    action: FEE_MISMATCH
+    is_ok: false
+    weight: 4
+    note: "CBS includes 50-rupee FX fee on top of transaction; EPIN/TLF do not — amount mismatch"
+
+  - id: h04_int_pos_fx_markup
+    code: H04
+    group: H
+    name: "INT POS — FX Markup Fee in CBS (EPIN amount lower)"
+    tran_type: POS
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {cbsmcw: 3500, fssgl: 3500}
+    action: FEE_MISMATCH
+    is_ok: false
+    weight: 4
+    note: "CBS includes 35-rupee FX markup; EPIN carries net amount only"
+
+  - id: h05_dom_pos_fee_missing_cbs
+    code: H05
+    group: H
+    name: "DOM POS — Fee in EPIN/PTLF, CBS Entry Absent"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1}
+    action: FEE_MISSING_CBS
+    is_ok: false
+    weight: 3
+    note: "Fee transaction appears in EPIN/PTLF but CBS has no corresponding entry"
+
+  - id: h06_dom_pos_fee_missing_epin
+    code: H06
+    group: H
+    name: "DOM POS — Fee in Switch/CBS, Missing from EPIN"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {ptlf: 1, cbsmcw: 1, fssgl: 1}
+    action: FEE_MISSING_EPIN
+    is_ok: false
+    weight: 3
+    note: "Fee/service-charge row present in PTLF and CBS but absent from EPIN (not sent to VISA)"
+
+  - id: h07_dom_pos_fee_missing_switch
+    code: H07
+    group: H
+    name: "DOM POS — Fee in EPIN/CBS, Missing from Switch"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, cbsmcw: 1, fssgl: 1}
+    action: FEE_MISSING_SWITCH
+    is_ok: false
+    weight: 3
+    note: "Fee/service-charge row present in EPIN and CBS but absent from PTLF"
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP I — AMOUNT MISMATCHES
+  # One or more files carry a different transaction amount.
+  # Outcome: AMOUNT_MISMATCH (exception)
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: i01_dom_atm_epin_high
+    code: I01
+    group: I
+    name: "DOM ATM — EPIN Amount Higher Than CBS/TLF"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {epin: 50000}
+    action: AMOUNT_MISMATCH
+    is_ok: false
+    weight: 6
+
+  - id: i02_dom_atm_epin_low
+    code: I02
+    group: I
+    name: "DOM ATM — EPIN Amount Lower Than CBS/TLF"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {epin: -50000}
+    action: AMOUNT_MISMATCH
+    is_ok: false
+    weight: 5
+
+  - id: i03_dom_atm_cbs_high
+    code: I03
+    group: I
+    name: "DOM ATM — CBS Amount Higher Than EPIN/TLF"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {cbsmcw: 50000}
+    action: AMOUNT_MISMATCH
+    is_ok: false
+    weight: 6
+
+  - id: i04_dom_atm_cbs_low
+    code: I04
+    group: I
+    name: "DOM ATM — CBS Amount Lower Than EPIN/TLF"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {cbsmcw: -50000}
+    action: AMOUNT_MISMATCH
+    is_ok: false
+    weight: 5
+
+  - id: i05_dom_atm_tlf_high
+    code: I05
+    group: I
+    name: "DOM ATM — TLF Amount Higher Than EPIN/CBS"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {tlf: 50000}
+    action: AMOUNT_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: i06_int_atm_epin_mismatch
+    code: I06
+    group: I
+    name: "INT ATM — EPIN Amount Mismatch (FX conversion difference)"
+    tran_type: ATM
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {epin: 25000}
+    action: AMOUNT_MISMATCH
+    is_ok: false
+    weight: 5
+
+  - id: i07_int_atm_cbs_high
+    code: I07
+    group: I
+    name: "INT ATM — CBS Amount Higher (FX rate applied differently)"
+    tran_type: ATM
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {cbsmcw: 30000}
+    action: AMOUNT_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: i08_int_atm_tlf_high
+    code: I08
+    group: I
+    name: "INT ATM — TLF Amount Higher"
+    tran_type: ATM
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {tlf: 30000}
+    action: AMOUNT_MISMATCH
+    is_ok: false
+    weight: 3
+
+  - id: i09_dom_pos_epin_high
+    code: I09
+    group: I
+    name: "DOM POS — EPIN Amount Higher Than CBS/PTLF"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {epin: 50000}
+    action: AMOUNT_MISMATCH
+    is_ok: false
+    weight: 6
+
+  - id: i10_dom_pos_cbs_high
+    code: I10
+    group: I
+    name: "DOM POS — CBS Amount Higher Than EPIN/PTLF"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {cbsmcw: 50000}
+    action: AMOUNT_MISMATCH
+    is_ok: false
+    weight: 6
+
+  - id: i11_dom_pos_ptlf_high
+    code: I11
+    group: I
+    name: "DOM POS — PTLF Amount Higher"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {ptlf: 50000}
+    action: AMOUNT_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: i12_dom_pos_ptlf_low
+    code: I12
+    group: I
+    name: "DOM POS — PTLF Amount Lower"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {ptlf: -50000}
+    action: AMOUNT_MISMATCH
+    is_ok: false
+    weight: 3
+
+  - id: i13_int_pos_epin_low
+    code: I13
+    group: I
+    name: "INT POS — EPIN Amount Lower (FX rounding)"
+    tran_type: POS
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {epin: -100}
+    action: AMOUNT_MISMATCH
+    is_ok: false
+    weight: 5
+
+  - id: i14_int_pos_cbs_high
+    code: I14
+    group: I
+    name: "INT POS — CBS Amount Higher"
+    tran_type: POS
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {cbsmcw: 30000}
+    action: AMOUNT_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: i15_int_pos_ptlf_high
+    code: I15
+    group: I
+    name: "INT POS — PTLF Amount Higher"
+    tran_type: POS
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {ptlf: 30000}
+    action: AMOUNT_MISMATCH
+    is_ok: false
+    weight: 3
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP J — DATE MISMATCHES
+  # Transaction or posting date in one file differs from others.
+  # Outcome: DATE_MISMATCH (exception)
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: j01_dom_atm_cbs_d1
+    code: J01
+    group: J
+    name: "DOM ATM — CBS Date D+1 (late CBS posting)"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    date_delta: {cbsmcw: 1}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 6
+
+  - id: j02_dom_atm_cbs_dm1
+    code: J02
+    group: J
+    name: "DOM ATM — CBS Date D-1 (early CBS posting)"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    date_delta: {cbsmcw: -1}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: j03_dom_atm_epin_d1
+    code: J03
+    group: J
+    name: "DOM ATM — EPIN Date D+1"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    date_delta: {epin: 1}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 5
+
+  - id: j04_dom_atm_tlf_d1
+    code: J04
+    group: J
+    name: "DOM ATM — TLF Date D+1"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    date_delta: {tlf: 1}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: j05_int_atm_cbs_d1
+    code: J05
+    group: J
+    name: "INT ATM — CBS Date D+1"
+    tran_type: ATM
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    date_delta: {cbsmcw: 1}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: j06_int_atm_epin_d1
+    code: J06
+    group: J
+    name: "INT ATM — EPIN Date D+1"
+    tran_type: ATM
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    date_delta: {epin: 1}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: j07_int_atm_tlf_d1
+    code: J07
+    group: J
+    name: "INT ATM — TLF Date D+1"
+    tran_type: ATM
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    date_delta: {tlf: 1}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 3
+
+  - id: j08_dom_pos_cbs_d1
+    code: J08
+    group: J
+    name: "DOM POS — CBS Date D+1"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    date_delta: {cbsmcw: 1}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 6
+
+  - id: j09_dom_pos_epin_d1
+    code: J09
+    group: J
+    name: "DOM POS — EPIN Date D+1"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    date_delta: {epin: 1}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 5
+
+  - id: j10_dom_pos_ptlf_d1
+    code: J10
+    group: J
+    name: "DOM POS — PTLF Date D+1"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    date_delta: {ptlf: 1}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: j11_int_pos_epin_d1
+    code: J11
+    group: J
+    name: "INT POS — EPIN Date D+1"
+    tran_type: POS
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    date_delta: {epin: 1}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: j12_int_pos_ptlf_d1
+    code: J12
+    group: J
+    name: "INT POS — PTLF Date D+1"
+    tran_type: POS
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    date_delta: {ptlf: 1}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 3
+
+  - id: j13_dom_atm_cbs_d5
+    code: J13
+    group: J
+    name: "DOM ATM — CBS Date D+5 (very late posting)"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    date_delta: {cbsmcw: 5, fssgl: 5}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: j14_dom_pos_cbs_d5
+    code: J14
+    group: J
+    name: "DOM POS — CBS Date D+5 (very late posting)"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    date_delta: {cbsmcw: 5, fssgl: 5}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 4
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP K — DUPLICATES & DOUBLE DEBIT
+  # An identical transaction row appears more than once in a file.
+  # Double debit = CBS has two identical debit entries for one purchase.
+  # Outcome: DUPLICATE / DOUBLE_DEBIT (exception)
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: k01_dom_atm_dup_epin
+    code: K01
+    group: K
+    name: "DOM ATM — Duplicate Row in EPIN"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    dup_files: [epin]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: DUPLICATE
+    is_ok: false
+    weight: 6
+
+  - id: k02_dom_atm_dup_tlf
+    code: K02
+    group: K
+    name: "DOM ATM — Duplicate Row in TLF"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    dup_files: [tlf]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: DUPLICATE
+    is_ok: false
+    weight: 5
+
+  - id: k03_dom_atm_dup_cbs
+    code: K03
+    group: K
+    name: "DOM ATM — Duplicate Row in CBS Only"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    dup_files: [cbsmcw]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: DUPLICATE
+    is_ok: false
+    weight: 4
+
+  - id: k04_dom_atm_double_debit
+    code: K04
+    group: K
+    name: "DOM ATM — Double Debit (CBS debits customer twice)"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    dup_files: [cbsmcw, fssgl]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: DOUBLE_DEBIT
+    is_ok: false
+    weight: 5
+
+  - id: k05_int_atm_dup_epin
+    code: K05
+    group: K
+    name: "INT ATM — Duplicate Row in EPIN"
+    tran_type: ATM
+    tran_category: I
+    coverage: [exhaustive]
+    dup_files: [epin]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: DUPLICATE
+    is_ok: false
+    weight: 4
+
+  - id: k06_int_atm_dup_tlf
+    code: K06
+    group: K
+    name: "INT ATM — Duplicate Row in TLF"
+    tran_type: ATM
+    tran_category: I
+    coverage: [exhaustive]
+    dup_files: [tlf]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: DUPLICATE
+    is_ok: false
+    weight: 3
+
+  - id: k07_int_atm_double_debit
+    code: K07
+    group: K
+    name: "INT ATM — Double Debit"
+    tran_type: ATM
+    tran_category: I
+    coverage: [exhaustive]
+    dup_files: [cbsmcw, fssgl]
+    file_states: {epin: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: DOUBLE_DEBIT
+    is_ok: false
+    weight: 4
+
+  - id: k08_dom_pos_dup_epin
+    code: K08
+    group: K
+    name: "DOM POS — Duplicate Row in EPIN"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    dup_files: [epin]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    action: DUPLICATE
+    is_ok: false
+    weight: 6
+
+  - id: k09_dom_pos_dup_ptlf
+    code: K09
+    group: K
+    name: "DOM POS — Duplicate Row in PTLF"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    dup_files: [ptlf]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    action: DUPLICATE
+    is_ok: false
+    weight: 5
+
+  - id: k10_dom_pos_dup_cbs
+    code: K10
+    group: K
+    name: "DOM POS — Duplicate Row in CBS"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    dup_files: [cbsmcw, fssgl]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    action: DUPLICATE
+    is_ok: false
+    weight: 4
+
+  - id: k11_dom_pos_double_debit
+    code: K11
+    group: K
+    name: "DOM POS — Double Debit (CBS 2×)"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    dup_files: [cbsmcw, fssgl]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    action: DOUBLE_DEBIT
+    is_ok: false
+    weight: 5
+
+  - id: k12_int_pos_dup_epin
+    code: K12
+    group: K
+    name: "INT POS — Duplicate Row in EPIN"
+    tran_type: POS
+    tran_category: I
+    coverage: [exhaustive]
+    dup_files: [epin]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    action: DUPLICATE
+    is_ok: false
+    weight: 4
+
+  - id: k13_int_pos_dup_ptlf
+    code: K13
+    group: K
+    name: "INT POS — Duplicate Row in PTLF"
+    tran_type: POS
+    tran_category: I
+    coverage: [exhaustive]
+    dup_files: [ptlf]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    action: DUPLICATE
+    is_ok: false
+    weight: 3
+
+  - id: k14_int_pos_double_debit
+    code: K14
+    group: K
+    name: "INT POS — Double Debit"
+    tran_type: POS
+    tran_category: I
+    coverage: [exhaustive]
+    dup_files: [cbsmcw, fssgl]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    action: DOUBLE_DEBIT
+    is_ok: false
+    weight: 4
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP L — MISSING FILES
+  # One or more participant files are absent for a transaction.
+  # Outcome: MISSING_* (exception)
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: l01_dom_atm_epin_miss
+    code: L01
+    group: L
+    name: "DOM ATM — EPIN Absent"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: MISSING_NETWORK_FILE
+    is_ok: false
+    weight: 5
+
+  - id: l02_dom_atm_tlf_miss
+    code: L02
+    group: L
+    name: "DOM ATM — TLF Absent"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, cbsmcw: 1, fssgl: 1}
+    action: MISSING_SWITCH_FILE
+    is_ok: false
+    weight: 5
+
+  - id: l03_dom_atm_cbs_miss
+    code: L03
+    group: L
+    name: "DOM ATM — CBS Absent (EPIN+TLF only)"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: 1}
+    action: MISSING_CBS_FILE
+    is_ok: false
+    weight: 5
+
+  - id: l04_dom_atm_epin_cbs_miss
+    code: L04
+    group: L
+    name: "DOM ATM — EPIN + CBS Absent (TLF only)"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {tlf: 1}
+    action: MISSING_NETWORK_AND_CBS
+    is_ok: false
+    weight: 3
+
+  - id: l05_dom_atm_tlf_cbs_miss
+    code: L05
+    group: L
+    name: "DOM ATM — TLF + CBS Absent (EPIN only)"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1}
+    action: MISSING_SWITCH_AND_CBS
+    is_ok: false
+    weight: 3
+
+  - id: l06_dom_atm_all_miss
+    code: L06
+    group: L
+    name: "DOM ATM — All Files Absent"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {}
+    action: ALL_MISSING
+    is_ok: false
+    weight: 1
+
+  - id: l07_int_atm_epin_miss
+    code: L07
+    group: L
+    name: "INT ATM — EPIN Absent"
+    tran_type: ATM
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: MISSING_NETWORK_FILE
+    is_ok: false
+    weight: 3
+
+  - id: l08_int_atm_cbs_miss
+    code: L08
+    group: L
+    name: "INT ATM — CBS Absent"
+    tran_type: ATM
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: 1}
+    action: MISSING_CBS_FILE
+    is_ok: false
+    weight: 3
+
+  - id: l09_dom_pos_epin_miss
+    code: L09
+    group: L
+    name: "DOM POS — EPIN Absent"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {ptlf: 1, cbsmcw: 1, fssgl: 1}
+    action: MISSING_NETWORK_FILE
+    is_ok: false
+    weight: 5
+
+  - id: l10_dom_pos_ptlf_miss
+    code: L10
+    group: L
+    name: "DOM POS — PTLF Absent"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, cbsmcw: 1, fssgl: 1}
+    action: MISSING_SWITCH_FILE
+    is_ok: false
+    weight: 5
+
+  - id: l11_dom_pos_cbs_miss
+    code: L11
+    group: L
+    name: "DOM POS — CBS Absent"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1}
+    action: MISSING_CBS_FILE
+    is_ok: false
+    weight: 5
+
+  - id: l12_dom_pos_epin_cbs_miss
+    code: L12
+    group: L
+    name: "DOM POS — EPIN + CBS Absent (PTLF only)"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {ptlf: 1}
+    action: MISSING_NETWORK_AND_CBS
+    is_ok: false
+    weight: 3
+
+  - id: l13_dom_pos_all_miss
+    code: L13
+    group: L
+    name: "DOM POS — All Files Absent"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {}
+    action: ALL_MISSING
+    is_ok: false
+    weight: 1
+
+  - id: l14_int_pos_epin_miss
+    code: L14
+    group: L
+    name: "INT POS — EPIN Absent"
+    tran_type: POS
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {ptlf: 1, cbsmcw: 1, fssgl: 1}
+    action: MISSING_NETWORK_FILE
+    is_ok: false
+    weight: 3
+
+  - id: l15_int_pos_cbs_miss
+    code: L15
+    group: L
+    name: "INT POS — CBS Absent"
+    tran_type: POS
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1}
+    action: MISSING_CBS_FILE
+    is_ok: false
+    weight: 3
+
+  - id: l16_dom_atm_cbs_only
+    code: L16
+    group: L
+    name: "DOM ATM — CBS Only (EPIN + TLF Absent)"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {cbsmcw: 1, fssgl: 1}
+    action: MISSING_NETWORK_AND_SWITCH
+    is_ok: false
+    weight: 3
+
+  - id: l17_dom_pos_cbs_only
+    code: L17
+    group: L
+    name: "DOM POS — CBS Only (EPIN + PTLF Absent)"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {cbsmcw: 1, fssgl: 1}
+    action: MISSING_NETWORK_AND_SWITCH
+    is_ok: false
+    weight: 3
+
+  - id: l18_dom_pos_epin_only
+    code: L18
+    group: L
+    name: "DOM POS — EPIN Only (PTLF + CBS Absent)"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1}
+    action: MISSING_SWITCH_AND_CBS
+    is_ok: false
+    weight: 3
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP M — CROSSFIRE / DIRECTION MISMATCH
+  # The transaction direction (forward vs reversal) is inconsistent
+  # across files — e.g., EPIN has a reversal while CBS has a forward.
+  # Outcome: CROSSFIRE_MISMATCH / CROSSFIRE_SWITCH / REVERSAL_MISMATCH
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: m01_dom_atm_epin_rev_cbs_fwd
+    code: M01
+    group: M
+    name: "DOM ATM — EPIN Reversal, CBS Forward (crossfire)"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: -1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: m02_dom_atm_tlf_rev_epin_fwd
+    code: M02
+    group: M
+    name: "DOM ATM — TLF Reversal, EPIN Forward"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: -1, cbsmcw: 1, fssgl: 1}
+    action: CROSSFIRE_SWITCH
+    is_ok: false
+    weight: 4
+
+  - id: m03_int_atm_epin_rev_cbs_fwd
+    code: M03
+    group: M
+    name: "INT ATM — EPIN Reversal, CBS Forward"
+    tran_type: ATM
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: -1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 3
+
+  - id: m04_dom_pos_epin_rev_cbs_fwd
+    code: M04
+    group: M
+    name: "DOM POS — EPIN Reversal, CBS Forward"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: -1, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: m05_dom_pos_ptlf_rev_epin_fwd
+    code: M05
+    group: M
+    name: "DOM POS — PTLF Reversal, EPIN Forward"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: -1, cbsmcw: 1, fssgl: 1}
+    action: CROSSFIRE_SWITCH
+    is_ok: false
+    weight: 4
+
+  - id: m06_int_pos_ptlf_rev_epin_fwd
+    code: M06
+    group: M
+    name: "INT POS — PTLF Reversal, EPIN Forward"
+    tran_type: POS
+    tran_category: I
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: -1, cbsmcw: 1, fssgl: 1}
+    action: CROSSFIRE_SWITCH
+    is_ok: false
+    weight: 3
+
+  - id: m07_dom_atm_epin_fwd_rev_tlf_fwd_only
+    code: M07
+    group: M
+    name: "DOM ATM — EPIN Fwd+Rev, TLF Forward Only (reversal mismatch)"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 0, tlf: 1, cbsmcw: 0, fssgl: 0}
+    action: REVERSAL_MISMATCH
+    is_ok: false
+    weight: 3
+
+  - id: m08_dom_pos_cbs_rev_epin_fwd
+    code: M08
+    group: M
+    name: "DOM POS — CBS Reversal, EPIN + PTLF Forward"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1, cbsmcw: -1, fssgl: -1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 3
+    note: "CBS carries a reversal (credit back to customer) while EPIN and Switch still show the original forward debit"
+
+  - id: m09_dom_atm_epin_tlf_rev_cbs_fwd
+    code: M09
+    group: M
+    name: "DOM ATM — EPIN + TLF Reversal, CBS Forward"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: -1, tlf: -1, cbsmcw: 1, fssgl: 1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 3
+    note: "Both EPIN and TLF carry the reversal but CBS still shows the original forward debit — CBS not updated"
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP N — PNC MATRIX: EPIN=fwd, remaining Switch/CBS combos
+  # Fills all (epin=1, switch, cbs) combos not covered in A–M.
+  # Includes the ATM-only gap for (1, 1, -1).
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: n01_dom_atm_e1_s1_c0
+    code: N01
+    group: N
+    name: "DOM ATM — EPIN:fwd SW:fwd CBS:fwd+rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: 1, tlf: 1, cbsmcw: 0, fssgl: 0}
+    action: REVERSAL_IN_CBS_ONLY
+    is_ok: false
+    weight: 2
+
+  - id: n02_dom_pos_e1_s1_c0
+    code: N02
+    group: N
+    name: "DOM POS — EPIN:fwd SW:fwd CBS:fwd+rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: 1, ptlf: 1, cbsmcw: 0, fssgl: 0}
+    action: REVERSAL_IN_CBS_ONLY
+    is_ok: false
+    weight: 2
+
+  - id: n03_dom_atm_e1_s1_cm1
+    code: N03
+    group: N
+    name: "DOM ATM — EPIN:fwd SW:fwd CBS:rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: 1, tlf: 1, cbsmcw: -1, fssgl: -1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n04_dom_atm_e1_sm1_cm1
+    code: N04
+    group: N
+    name: "DOM ATM — EPIN:fwd SW:rev CBS:rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: 1, tlf: -1, cbsmcw: -1, fssgl: -1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n05_dom_pos_e1_sm1_cm1
+    code: N05
+    group: N
+    name: "DOM POS — EPIN:fwd SW:rev CBS:rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: 1, ptlf: -1, cbsmcw: -1, fssgl: -1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n06_dom_atm_e1_sm1_c0
+    code: N06
+    group: N
+    name: "DOM ATM — EPIN:fwd SW:rev CBS:fwd+rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: 1, tlf: -1, cbsmcw: 0, fssgl: 0}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n07_dom_pos_e1_sm1_c0
+    code: N07
+    group: N
+    name: "DOM POS — EPIN:fwd SW:rev CBS:fwd+rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: 1, ptlf: -1, cbsmcw: 0, fssgl: 0}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n08_dom_atm_e1_sm1_cabs
+    code: N08
+    group: N
+    name: "DOM ATM — EPIN:fwd SW:rev CBS:absent"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: 1, tlf: -1}
+    action: MISSING_CBS_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n09_dom_pos_e1_sm1_cabs
+    code: N09
+    group: N
+    name: "DOM POS — EPIN:fwd SW:rev CBS:absent"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: 1, ptlf: -1}
+    action: MISSING_CBS_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n10_dom_atm_e1_s0_c1
+    code: N10
+    group: N
+    name: "DOM ATM — EPIN:fwd SW:fwd+rev CBS:fwd"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: 1, tlf: 0, cbsmcw: 1, fssgl: 1}
+    action: REVERSAL_IN_SWITCH_ONLY
+    is_ok: false
+    weight: 2
+
+  - id: n11_dom_pos_e1_s0_c1
+    code: N11
+    group: N
+    name: "DOM POS — EPIN:fwd SW:fwd+rev CBS:fwd"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: 1, ptlf: 0, cbsmcw: 1, fssgl: 1}
+    action: REVERSAL_IN_SWITCH_ONLY
+    is_ok: false
+    weight: 2
+
+  - id: n12_dom_atm_e1_s0_cm1
+    code: N12
+    group: N
+    name: "DOM ATM — EPIN:fwd SW:fwd+rev CBS:rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: 1, tlf: 0, cbsmcw: -1, fssgl: -1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n13_dom_pos_e1_s0_cm1
+    code: N13
+    group: N
+    name: "DOM POS — EPIN:fwd SW:fwd+rev CBS:rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: 1, ptlf: 0, cbsmcw: -1, fssgl: -1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n14_dom_atm_e1_s0_c0
+    code: N14
+    group: N
+    name: "DOM ATM — EPIN:fwd SW:fwd+rev CBS:fwd+rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: 1, tlf: 0, cbsmcw: 0, fssgl: 0}
+    action: REVERSAL_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n15_dom_pos_e1_s0_c0
+    code: N15
+    group: N
+    name: "DOM POS — EPIN:fwd SW:fwd+rev CBS:fwd+rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: 1, ptlf: 0, cbsmcw: 0, fssgl: 0}
+    action: REVERSAL_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n16_dom_atm_e1_s0_cabs
+    code: N16
+    group: N
+    name: "DOM ATM — EPIN:fwd SW:fwd+rev CBS:absent"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: 1, tlf: 0}
+    action: MISSING_CBS_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n17_dom_pos_e1_s0_cabs
+    code: N17
+    group: N
+    name: "DOM POS — EPIN:fwd SW:fwd+rev CBS:absent"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: 1, ptlf: 0}
+    action: MISSING_CBS_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n18_dom_atm_e1_sabs_cm1
+    code: N18
+    group: N
+    name: "DOM ATM — EPIN:fwd SW:absent CBS:rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: 1, cbsmcw: -1, fssgl: -1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n19_dom_pos_e1_sabs_cm1
+    code: N19
+    group: N
+    name: "DOM POS — EPIN:fwd SW:absent CBS:rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: 1, cbsmcw: -1, fssgl: -1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n20_dom_atm_e1_sabs_c0
+    code: N20
+    group: N
+    name: "DOM ATM — EPIN:fwd SW:absent CBS:fwd+rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: 1, cbsmcw: 0, fssgl: 0}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n21_dom_pos_e1_sabs_c0
+    code: N21
+    group: N
+    name: "DOM POS — EPIN:fwd SW:absent CBS:fwd+rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: 1, cbsmcw: 0, fssgl: 0}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP N (cont.) — PNC MATRIX: EPIN=rev, remaining Switch/CBS combos
+  # Fills all (epin=-1, switch, cbs) combos not covered in A–M.
+  # Includes the POS-only gap for (-1, -1, 1).
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: n22_dom_atm_em1_s1_cm1
+    code: N22
+    group: N
+    name: "DOM ATM — EPIN:rev SW:fwd CBS:rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: -1, tlf: 1, cbsmcw: -1, fssgl: -1}
+    action: CROSSFIRE_SWITCH
+    is_ok: false
+    weight: 2
+
+  - id: n23_dom_pos_em1_s1_cm1
+    code: N23
+    group: N
+    name: "DOM POS — EPIN:rev SW:fwd CBS:rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: -1, ptlf: 1, cbsmcw: -1, fssgl: -1}
+    action: CROSSFIRE_SWITCH
+    is_ok: false
+    weight: 2
+
+  - id: n24_dom_atm_em1_s1_cabs
+    code: N24
+    group: N
+    name: "DOM ATM — EPIN:rev SW:fwd CBS:absent"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: -1, tlf: 1}
+    action: MISSING_CBS_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n25_dom_pos_em1_s1_cabs
+    code: N25
+    group: N
+    name: "DOM POS — EPIN:rev SW:fwd CBS:absent"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: -1, ptlf: 1}
+    action: MISSING_CBS_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n26_dom_atm_em1_sm1_c0
+    code: N26
+    group: N
+    name: "DOM ATM — EPIN:rev SW:rev CBS:fwd+rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: -1, tlf: -1, cbsmcw: 0, fssgl: 0}
+    action: REVERSAL_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n27_dom_pos_em1_sm1_c0
+    code: N27
+    group: N
+    name: "DOM POS — EPIN:rev SW:rev CBS:fwd+rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: -1, ptlf: -1, cbsmcw: 0, fssgl: 0}
+    action: REVERSAL_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n28_dom_atm_em1_sm1_cabs
+    code: N28
+    group: N
+    name: "DOM ATM — EPIN:rev SW:rev CBS:absent"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: -1, tlf: -1}
+    action: MISSING_CBS_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n29_dom_pos_em1_sm1_cabs
+    code: N29
+    group: N
+    name: "DOM POS — EPIN:rev SW:rev CBS:absent"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: -1, ptlf: -1}
+    action: MISSING_CBS_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n30_dom_pos_em1_sm1_c1
+    code: N30
+    group: N
+    name: "DOM POS — EPIN:rev SW:rev CBS:fwd"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: -1, ptlf: -1, cbsmcw: 1, fssgl: 1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n31_dom_atm_em1_s0_c1
+    code: N31
+    group: N
+    name: "DOM ATM — EPIN:rev SW:fwd+rev CBS:fwd"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: -1, tlf: 0, cbsmcw: 1, fssgl: 1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n32_dom_pos_em1_s0_c1
+    code: N32
+    group: N
+    name: "DOM POS — EPIN:rev SW:fwd+rev CBS:fwd"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: -1, ptlf: 0, cbsmcw: 1, fssgl: 1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n33_dom_atm_em1_s0_cm1
+    code: N33
+    group: N
+    name: "DOM ATM — EPIN:rev SW:fwd+rev CBS:rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: -1, tlf: 0, cbsmcw: -1, fssgl: -1}
+    action: REVERSAL_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n34_dom_pos_em1_s0_cm1
+    code: N34
+    group: N
+    name: "DOM POS — EPIN:rev SW:fwd+rev CBS:rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: -1, ptlf: 0, cbsmcw: -1, fssgl: -1}
+    action: REVERSAL_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n35_dom_atm_em1_s0_c0
+    code: N35
+    group: N
+    name: "DOM ATM — EPIN:rev SW:fwd+rev CBS:fwd+rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: -1, tlf: 0, cbsmcw: 0, fssgl: 0}
+    action: REVERSAL_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n36_dom_pos_em1_s0_c0
+    code: N36
+    group: N
+    name: "DOM POS — EPIN:rev SW:fwd+rev CBS:fwd+rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: -1, ptlf: 0, cbsmcw: 0, fssgl: 0}
+    action: REVERSAL_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n37_dom_atm_em1_s0_cabs
+    code: N37
+    group: N
+    name: "DOM ATM — EPIN:rev SW:fwd+rev CBS:absent"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: -1, tlf: 0}
+    action: MISSING_CBS_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n38_dom_pos_em1_s0_cabs
+    code: N38
+    group: N
+    name: "DOM POS — EPIN:rev SW:fwd+rev CBS:absent"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: -1, ptlf: 0}
+    action: MISSING_CBS_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n39_dom_atm_em1_sabs_c1
+    code: N39
+    group: N
+    name: "DOM ATM — EPIN:rev SW:absent CBS:fwd"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: -1, cbsmcw: 1, fssgl: 1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n40_dom_pos_em1_sabs_c1
+    code: N40
+    group: N
+    name: "DOM POS — EPIN:rev SW:absent CBS:fwd"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: -1, cbsmcw: 1, fssgl: 1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n41_dom_atm_em1_sabs_cm1
+    code: N41
+    group: N
+    name: "DOM ATM — EPIN:rev SW:absent CBS:rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: -1, cbsmcw: -1, fssgl: -1}
+    action: MISSING_SWITCH_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n42_dom_pos_em1_sabs_cm1
+    code: N42
+    group: N
+    name: "DOM POS — EPIN:rev SW:absent CBS:rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: -1, cbsmcw: -1, fssgl: -1}
+    action: MISSING_SWITCH_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n43_dom_atm_em1_sabs_c0
+    code: N43
+    group: N
+    name: "DOM ATM — EPIN:rev SW:absent CBS:fwd+rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: -1, cbsmcw: 0, fssgl: 0}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n44_dom_pos_em1_sabs_c0
+    code: N44
+    group: N
+    name: "DOM POS — EPIN:rev SW:absent CBS:fwd+rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: -1, cbsmcw: 0, fssgl: 0}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n45_dom_atm_em1_sabs_cabs
+    code: N45
+    group: N
+    name: "DOM ATM — EPIN:rev SW:absent CBS:absent"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: -1}
+    action: MISSING_SWITCH_AND_CBS
+    is_ok: false
+    weight: 1
+
+  - id: n46_dom_pos_em1_sabs_cabs
+    code: N46
+    group: N
+    name: "DOM POS — EPIN:rev SW:absent CBS:absent"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: -1}
+    action: MISSING_SWITCH_AND_CBS
+    is_ok: false
+    weight: 1
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP N (cont.) — PNC MATRIX: EPIN=fwd+rev, all Switch/CBS combos
+  # Fills all (epin=0, switch, cbs) combos not covered in A–M.
+  # Includes the POS-only gap for (0, 1, 0).
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: n47_dom_pos_e0_s1_c0
+    code: N47
+    group: N
+    name: "DOM POS — EPIN:fwd+rev SW:fwd CBS:fwd+rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: 0, ptlf: 1, cbsmcw: 0, fssgl: 0}
+    action: REVERSAL_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n48_dom_atm_e0_s1_c1
+    code: N48
+    group: N
+    name: "DOM ATM — EPIN:fwd+rev SW:fwd CBS:fwd"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: 0, tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: REVERSAL_IN_EPIN_ONLY
+    is_ok: false
+    weight: 2
+
+  - id: n49_dom_pos_e0_s1_c1
+    code: N49
+    group: N
+    name: "DOM POS — EPIN:fwd+rev SW:fwd CBS:fwd"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: 0, ptlf: 1, cbsmcw: 1, fssgl: 1}
+    action: REVERSAL_IN_EPIN_ONLY
+    is_ok: false
+    weight: 2
+
+  - id: n50_dom_atm_e0_s1_cm1
+    code: N50
+    group: N
+    name: "DOM ATM — EPIN:fwd+rev SW:fwd CBS:rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: 0, tlf: 1, cbsmcw: -1, fssgl: -1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n51_dom_pos_e0_s1_cm1
+    code: N51
+    group: N
+    name: "DOM POS — EPIN:fwd+rev SW:fwd CBS:rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: 0, ptlf: 1, cbsmcw: -1, fssgl: -1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n52_dom_atm_e0_s1_cabs
+    code: N52
+    group: N
+    name: "DOM ATM — EPIN:fwd+rev SW:fwd CBS:absent"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: 0, tlf: 1}
+    action: MISSING_CBS_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n53_dom_pos_e0_s1_cabs
+    code: N53
+    group: N
+    name: "DOM POS — EPIN:fwd+rev SW:fwd CBS:absent"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: 0, ptlf: 1}
+    action: MISSING_CBS_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n54_dom_atm_e0_sm1_c1
+    code: N54
+    group: N
+    name: "DOM ATM — EPIN:fwd+rev SW:rev CBS:fwd"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: 0, tlf: -1, cbsmcw: 1, fssgl: 1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n55_dom_pos_e0_sm1_c1
+    code: N55
+    group: N
+    name: "DOM POS — EPIN:fwd+rev SW:rev CBS:fwd"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: 0, ptlf: -1, cbsmcw: 1, fssgl: 1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n56_dom_atm_e0_sm1_cm1
+    code: N56
+    group: N
+    name: "DOM ATM — EPIN:fwd+rev SW:rev CBS:rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: 0, tlf: -1, cbsmcw: -1, fssgl: -1}
+    action: REVERSAL_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n57_dom_pos_e0_sm1_cm1
+    code: N57
+    group: N
+    name: "DOM POS — EPIN:fwd+rev SW:rev CBS:rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: 0, ptlf: -1, cbsmcw: -1, fssgl: -1}
+    action: REVERSAL_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n58_dom_atm_e0_sm1_c0
+    code: N58
+    group: N
+    name: "DOM ATM — EPIN:fwd+rev SW:rev CBS:fwd+rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: 0, tlf: -1, cbsmcw: 0, fssgl: 0}
+    action: REVERSAL_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n59_dom_pos_e0_sm1_c0
+    code: N59
+    group: N
+    name: "DOM POS — EPIN:fwd+rev SW:rev CBS:fwd+rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: 0, ptlf: -1, cbsmcw: 0, fssgl: 0}
+    action: REVERSAL_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n60_dom_atm_e0_sm1_cabs
+    code: N60
+    group: N
+    name: "DOM ATM — EPIN:fwd+rev SW:rev CBS:absent"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: 0, tlf: -1}
+    action: MISSING_CBS_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n61_dom_pos_e0_sm1_cabs
+    code: N61
+    group: N
+    name: "DOM POS — EPIN:fwd+rev SW:rev CBS:absent"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: 0, ptlf: -1}
+    action: MISSING_CBS_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n62_dom_atm_e0_s0_c1
+    code: N62
+    group: N
+    name: "DOM ATM — EPIN:fwd+rev SW:fwd+rev CBS:fwd"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: 0, tlf: 0, cbsmcw: 1, fssgl: 1}
+    action: REVERSAL_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n63_dom_pos_e0_s0_c1
+    code: N63
+    group: N
+    name: "DOM POS — EPIN:fwd+rev SW:fwd+rev CBS:fwd"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: 0, ptlf: 0, cbsmcw: 1, fssgl: 1}
+    action: REVERSAL_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n64_dom_atm_e0_s0_cabs
+    code: N64
+    group: N
+    name: "DOM ATM — EPIN:fwd+rev SW:fwd+rev CBS:absent"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: 0, tlf: 0}
+    action: MISSING_CBS_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n65_dom_pos_e0_s0_cabs
+    code: N65
+    group: N
+    name: "DOM POS — EPIN:fwd+rev SW:fwd+rev CBS:absent"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: 0, ptlf: 0}
+    action: MISSING_CBS_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n66_dom_atm_e0_sabs_c1
+    code: N66
+    group: N
+    name: "DOM ATM — EPIN:fwd+rev SW:absent CBS:fwd"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: 0, cbsmcw: 1, fssgl: 1}
+    action: REVERSAL_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n67_dom_pos_e0_sabs_c1
+    code: N67
+    group: N
+    name: "DOM POS — EPIN:fwd+rev SW:absent CBS:fwd"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: 0, cbsmcw: 1, fssgl: 1}
+    action: REVERSAL_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n68_dom_atm_e0_sabs_cm1
+    code: N68
+    group: N
+    name: "DOM ATM — EPIN:fwd+rev SW:absent CBS:rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: 0, cbsmcw: -1, fssgl: -1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n69_dom_pos_e0_sabs_cm1
+    code: N69
+    group: N
+    name: "DOM POS — EPIN:fwd+rev SW:absent CBS:rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: 0, cbsmcw: -1, fssgl: -1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n70_dom_atm_e0_sabs_c0
+    code: N70
+    group: N
+    name: "DOM ATM — EPIN:fwd+rev SW:absent CBS:fwd+rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: 0, cbsmcw: 0, fssgl: 0}
+    action: MISSING_SWITCH_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n71_dom_pos_e0_sabs_c0
+    code: N71
+    group: N
+    name: "DOM POS — EPIN:fwd+rev SW:absent CBS:fwd+rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: 0, cbsmcw: 0, fssgl: 0}
+    action: MISSING_SWITCH_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n72_dom_atm_e0_sabs_cabs
+    code: N72
+    group: N
+    name: "DOM ATM — EPIN:fwd+rev SW:absent CBS:absent"
+    tran_type: ATM
+    tran_category: D
+    file_states: {epin: 0}
+    action: MISSING_SWITCH_AND_CBS
+    is_ok: false
+    weight: 1
+
+  - id: n73_dom_pos_e0_sabs_cabs
+    code: N73
+    group: N
+    name: "DOM POS — EPIN:fwd+rev SW:absent CBS:absent"
+    tran_type: POS
+    tran_category: D
+    file_states: {epin: 0}
+    action: MISSING_SWITCH_AND_CBS
+    is_ok: false
+    weight: 1
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP N (cont.) — PNC MATRIX: EPIN=absent, all Switch/CBS combos
+  # Fills all (epin=null, switch, cbs) combos not covered in A–M.
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: n74_dom_atm_eabs_s1_cm1
+    code: N74
+    group: N
+    name: "DOM ATM — EPIN:absent SW:fwd CBS:rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {tlf: 1, cbsmcw: -1, fssgl: -1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n75_dom_pos_eabs_s1_cm1
+    code: N75
+    group: N
+    name: "DOM POS — EPIN:absent SW:fwd CBS:rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {ptlf: 1, cbsmcw: -1, fssgl: -1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n76_dom_atm_eabs_s1_c0
+    code: N76
+    group: N
+    name: "DOM ATM — EPIN:absent SW:fwd CBS:fwd+rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {tlf: 1, cbsmcw: 0, fssgl: 0}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n77_dom_pos_eabs_s1_c0
+    code: N77
+    group: N
+    name: "DOM POS — EPIN:absent SW:fwd CBS:fwd+rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {ptlf: 1, cbsmcw: 0, fssgl: 0}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n78_dom_atm_eabs_sm1_c1
+    code: N78
+    group: N
+    name: "DOM ATM — EPIN:absent SW:rev CBS:fwd"
+    tran_type: ATM
+    tran_category: D
+    file_states: {tlf: -1, cbsmcw: 1, fssgl: 1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n79_dom_pos_eabs_sm1_c1
+    code: N79
+    group: N
+    name: "DOM POS — EPIN:absent SW:rev CBS:fwd"
+    tran_type: POS
+    tran_category: D
+    file_states: {ptlf: -1, cbsmcw: 1, fssgl: 1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n80_dom_atm_eabs_sm1_cm1
+    code: N80
+    group: N
+    name: "DOM ATM — EPIN:absent SW:rev CBS:rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {tlf: -1, cbsmcw: -1, fssgl: -1}
+    action: MISSING_NETWORK_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n81_dom_pos_eabs_sm1_cm1
+    code: N81
+    group: N
+    name: "DOM POS — EPIN:absent SW:rev CBS:rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {ptlf: -1, cbsmcw: -1, fssgl: -1}
+    action: MISSING_NETWORK_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n82_dom_atm_eabs_sm1_c0
+    code: N82
+    group: N
+    name: "DOM ATM — EPIN:absent SW:rev CBS:fwd+rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {tlf: -1, cbsmcw: 0, fssgl: 0}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n83_dom_pos_eabs_sm1_c0
+    code: N83
+    group: N
+    name: "DOM POS — EPIN:absent SW:rev CBS:fwd+rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {ptlf: -1, cbsmcw: 0, fssgl: 0}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n84_dom_atm_eabs_sm1_cabs
+    code: N84
+    group: N
+    name: "DOM ATM — EPIN:absent SW:rev CBS:absent"
+    tran_type: ATM
+    tran_category: D
+    file_states: {tlf: -1}
+    action: MISSING_NETWORK_AND_CBS
+    is_ok: false
+    weight: 1
+
+  - id: n85_dom_pos_eabs_sm1_cabs
+    code: N85
+    group: N
+    name: "DOM POS — EPIN:absent SW:rev CBS:absent"
+    tran_type: POS
+    tran_category: D
+    file_states: {ptlf: -1}
+    action: MISSING_NETWORK_AND_CBS
+    is_ok: false
+    weight: 1
+
+  - id: n86_dom_atm_eabs_s0_c1
+    code: N86
+    group: N
+    name: "DOM ATM — EPIN:absent SW:fwd+rev CBS:fwd"
+    tran_type: ATM
+    tran_category: D
+    file_states: {tlf: 0, cbsmcw: 1, fssgl: 1}
+    action: REVERSAL_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n87_dom_pos_eabs_s0_c1
+    code: N87
+    group: N
+    name: "DOM POS — EPIN:absent SW:fwd+rev CBS:fwd"
+    tran_type: POS
+    tran_category: D
+    file_states: {ptlf: 0, cbsmcw: 1, fssgl: 1}
+    action: REVERSAL_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n88_dom_atm_eabs_s0_cm1
+    code: N88
+    group: N
+    name: "DOM ATM — EPIN:absent SW:fwd+rev CBS:rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {tlf: 0, cbsmcw: -1, fssgl: -1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n89_dom_pos_eabs_s0_cm1
+    code: N89
+    group: N
+    name: "DOM POS — EPIN:absent SW:fwd+rev CBS:rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {ptlf: 0, cbsmcw: -1, fssgl: -1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n90_dom_atm_eabs_s0_c0
+    code: N90
+    group: N
+    name: "DOM ATM — EPIN:absent SW:fwd+rev CBS:fwd+rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {tlf: 0, cbsmcw: 0, fssgl: 0}
+    action: MISSING_NETWORK_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n91_dom_pos_eabs_s0_c0
+    code: N91
+    group: N
+    name: "DOM POS — EPIN:absent SW:fwd+rev CBS:fwd+rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {ptlf: 0, cbsmcw: 0, fssgl: 0}
+    action: MISSING_NETWORK_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n92_dom_atm_eabs_s0_cabs
+    code: N92
+    group: N
+    name: "DOM ATM — EPIN:absent SW:fwd+rev CBS:absent"
+    tran_type: ATM
+    tran_category: D
+    file_states: {tlf: 0}
+    action: MISSING_NETWORK_AND_CBS
+    is_ok: false
+    weight: 1
+
+  - id: n93_dom_pos_eabs_s0_cabs
+    code: N93
+    group: N
+    name: "DOM POS — EPIN:absent SW:fwd+rev CBS:absent"
+    tran_type: POS
+    tran_category: D
+    file_states: {ptlf: 0}
+    action: MISSING_NETWORK_AND_CBS
+    is_ok: false
+    weight: 1
+
+  - id: n94_dom_atm_eabs_sabs_cm1
+    code: N94
+    group: N
+    name: "DOM ATM — EPIN:absent SW:absent CBS:rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {cbsmcw: -1, fssgl: -1}
+    action: MISSING_NETWORK_AND_SWITCH
+    is_ok: false
+    weight: 1
+
+  - id: n95_dom_pos_eabs_sabs_cm1
+    code: N95
+    group: N
+    name: "DOM POS — EPIN:absent SW:absent CBS:rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {cbsmcw: -1, fssgl: -1}
+    action: MISSING_NETWORK_AND_SWITCH
+    is_ok: false
+    weight: 1
+
+  - id: n96_dom_atm_eabs_sabs_c0
+    code: N96
+    group: N
+    name: "DOM ATM — EPIN:absent SW:absent CBS:fwd+rev"
+    tran_type: ATM
+    tran_category: D
+    file_states: {cbsmcw: 0, fssgl: 0}
+    action: MISSING_NETWORK_AND_SWITCH
+    is_ok: false
+    weight: 1
+
+  - id: n97_dom_pos_eabs_sabs_c0
+    code: N97
+    group: N
+    name: "DOM POS — EPIN:absent SW:absent CBS:fwd+rev"
+    tran_type: POS
+    tran_category: D
+    file_states: {cbsmcw: 0, fssgl: 0}
+    action: MISSING_NETWORK_AND_SWITCH
+    is_ok: false
+    weight: 1
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP O — MISSING FILE + AMOUNT MISMATCH IN REMAINING 2 FILES
+  # One participant file is absent AND the two present files disagree
+  # on the transaction amount.  Both failure modes fire simultaneously:
+  # reconciliation sees a missing leg AND cannot agree on the value.
+  # Outcome: MISSING_WITH_AMOUNT_MISMATCH (exception)
+  # ══════════════════════════════════════════════════════════════════
+
+  # ── ATM: EPIN absent ─────────────────────────────────────────────
+
+  - id: o01_dom_atm_epin_miss_tlf_high
+    code: O01
+    group: O
+    name: "DOM ATM — EPIN Absent, TLF High vs CBS"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {tlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {tlf: 50000}
+    action: MISSING_WITH_AMOUNT_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: o02_dom_atm_epin_miss_cbs_high
+    code: O02
+    group: O
+    name: "DOM ATM — EPIN Absent, CBS High vs TLF"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {tlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {cbsmcw: 50000}
+    action: MISSING_WITH_AMOUNT_MISMATCH
+    is_ok: false
+    weight: 4
+
+  # ── ATM: TLF absent ──────────────────────────────────────────────
+
+  - id: o03_dom_atm_tlf_miss_epin_high
+    code: O03
+    group: O
+    name: "DOM ATM — TLF Absent, EPIN High vs CBS"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {epin: 50000}
+    action: MISSING_WITH_AMOUNT_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: o04_dom_atm_tlf_miss_cbs_high
+    code: O04
+    group: O
+    name: "DOM ATM — TLF Absent, CBS High vs EPIN"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {cbsmcw: 50000}
+    action: MISSING_WITH_AMOUNT_MISMATCH
+    is_ok: false
+    weight: 4
+
+  # ── ATM: CBS absent ───────────────────────────────────────────────
+
+  - id: o05_dom_atm_cbs_miss_epin_high
+    code: O05
+    group: O
+    name: "DOM ATM — CBS Absent, EPIN High vs TLF"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: 1}
+    amt_delta: {epin: 50000}
+    action: MISSING_WITH_AMOUNT_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: o06_dom_atm_cbs_miss_tlf_high
+    code: O06
+    group: O
+    name: "DOM ATM — CBS Absent, TLF High vs EPIN"
+    tran_type: ATM
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, tlf: 1}
+    amt_delta: {tlf: 50000}
+    action: MISSING_WITH_AMOUNT_MISMATCH
+    is_ok: false
+    weight: 4
+
+  # ── POS: EPIN absent ─────────────────────────────────────────────
+
+  - id: o07_dom_pos_epin_miss_ptlf_high
+    code: O07
+    group: O
+    name: "DOM POS — EPIN Absent, PTLF High vs CBS"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {ptlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {ptlf: 50000}
+    action: MISSING_WITH_AMOUNT_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: o08_dom_pos_epin_miss_cbs_high
+    code: O08
+    group: O
+    name: "DOM POS — EPIN Absent, CBS High vs PTLF"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {ptlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {cbsmcw: 50000}
+    action: MISSING_WITH_AMOUNT_MISMATCH
+    is_ok: false
+    weight: 4
+
+  # ── POS: PTLF absent ─────────────────────────────────────────────
+
+  - id: o09_dom_pos_ptlf_miss_epin_high
+    code: O09
+    group: O
+    name: "DOM POS — PTLF Absent, EPIN High vs CBS"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {epin: 50000}
+    action: MISSING_WITH_AMOUNT_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: o10_dom_pos_ptlf_miss_cbs_high
+    code: O10
+    group: O
+    name: "DOM POS — PTLF Absent, CBS High vs EPIN"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {cbsmcw: 50000}
+    action: MISSING_WITH_AMOUNT_MISMATCH
+    is_ok: false
+    weight: 4
+
+  # ── POS: CBS absent ───────────────────────────────────────────────
+
+  - id: o11_dom_pos_cbs_miss_epin_high
+    code: O11
+    group: O
+    name: "DOM POS — CBS Absent, EPIN High vs PTLF"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1}
+    amt_delta: {epin: 50000}
+    action: MISSING_WITH_AMOUNT_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: o12_dom_pos_cbs_miss_ptlf_high
+    code: O12
+    group: O
+    name: "DOM POS — CBS Absent, PTLF High vs EPIN"
+    tran_type: POS
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 1, ptlf: 1}
+    amt_delta: {ptlf: 50000}
+    action: MISSING_WITH_AMOUNT_MISMATCH
+    is_ok: false
+    weight: 4
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP P — MERCHANDISE CREDIT (TC 06 / TC 26) vs ORIGINAL PURCHASE
+  # TC 06 = Merchandise Credit (credit issued to card).
+  # TC 26 = Reversal of that merchandise credit.
+  # The "original" that the MC was issued against is a prior purchase:
+  #   TC 07 if it was an ATM withdrawal, TC 05 if it was a POS purchase.
+  # Recon links TC06/TC26 to the original via card_pan (EPIN pos 5-20)
+  # and auth_id[:6] (EPIN pos 152-157).
+  # P01: original TC 05 (POS) is present in EPIN — full chain visible.
+  # P02: original TC 05/07 is absent from EPIN — orphan MC exception.
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: p01_dom_mc_with_original_pos
+    code: P01
+    group: P
+    name: "DOM MC — TC06+TC26, Original TC05 (POS) Present in EPIN"
+    tran_type: MERCH_CR
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 0, ptlf: 0, cbsmcw: 0, fssgl: 0}
+    companion_original: POS
+    action: MC_REV_ORIGINAL_PRESENT
+    is_ok: true
+    weight: 5
+    note: >
+      EPIN carries: TC05 (original POS purchase), TC06 (merchandise credit),
+      TC26 (reversal of TC06).  All share card_pan and the TC06/TC26 pair
+      also share auth_id[:6].  Recon can trace the full chain.
+      Same logic applies for ATM: replace companion_original with ATM → TC07.
+
+  - id: p02_dom_mc_no_original
+    code: P02
+    group: P
+    name: "DOM MC — TC06+TC26, Original TC05/TC07 Absent from EPIN"
+    tran_type: MERCH_CR
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 0, ptlf: 0, cbsmcw: 0, fssgl: 0}
+    action: MC_ORIGINAL_ABSENT
+    is_ok: false
+    weight: 4
+    note: >
+      EPIN carries TC06 (merchandise credit) and TC26 (its reversal) but
+      NO original TC05/TC07 purchase.  Recon cannot trace the MC back to
+      the triggering purchase — orphan merchandise credit exception.
+      Match keys checked: card_pan (EPIN pos 5-20), auth_id[:6] (pos 152-157).
+
+  - id: p03_dom_mc_orig_higher
+    code: P03
+    group: P
+    name: "DOM MC — Original TC05 Amount Higher Than TC06 (Partial Credit)"
+    tran_type: MERCH_CR
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 0, ptlf: 0, cbsmcw: 0, fssgl: 0}
+    companion_original: POS
+    companion_amt_delta: 50000
+    action: MC_AMOUNT_MISMATCH
+    is_ok: false
+    weight: 4
+    note: >
+      TC05 (original POS purchase) amount is ₹500 MORE than TC06 (merchandise
+      credit).  All 5 join keys match so recon finds the pair, but amounts
+      differ — partial credit issued against a higher-value purchase.
+      TC05 amount = base + 50000 paise; TC06 amount = base.
+
+  - id: p04_dom_mc_orig_lower
+    code: P04
+    group: P
+    name: "DOM MC — Original TC05 Amount Lower Than TC06 (Over-Credit)"
+    tran_type: MERCH_CR
+    tran_category: D
+    coverage: [exhaustive]
+    file_states: {epin: 0, ptlf: 0, cbsmcw: 0, fssgl: 0}
+    companion_original: POS
+    companion_amt_delta: -50000
+    action: MC_AMOUNT_MISMATCH
+    is_ok: false
+    weight: 4
+    note: >
+      TC05 (original POS purchase) amount is ₹500 LESS than TC06 (merchandise
+      credit).  All 5 join keys match so recon finds the pair, but amounts
+      differ — credit issued for more than the original purchase value.
+      TC05 amount = base - 50000 paise; TC06 amount = base.

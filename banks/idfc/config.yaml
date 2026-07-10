@@ -1,0 +1,179 @@
+bank_id: idfc
+bank_name: "IDFC First Bank"
+network: VISA
+
+atm:
+  institution_id: IDFE
+  tran_code_prefix: "10"
+
+pos:
+  institution_id: IDFP
+  tran_code_prefix: "10"
+
+cbs:
+  atm_gl_account: "0000098094102017"
+  pos_gl_account: "0000098095102016"
+  branch_code: "10201"
+  atm_settlement_account: "0229136"
+  pos_settlement_account: "0221524"
+  card_pool_account: "9900001"
+
+visa:
+  domestic:
+    rollup_to:
+      biz_id: "9000375026"
+      biz_name: "IDFC BIZ ISS"
+      debit_id: "9000375027"
+      debit_name: "IDFC DEBIT ISS"
+    funds_xfer_entity: "9000375020"
+    funds_xfer_name: "IDFC"
+    reporting_for:
+      - id: "1000565644"
+        name: "421366 SIGNATUR"
+        bin: "421366"
+        bucket: "biz"
+      - id: "1000594825"
+        name: "IDFC 401347 DOM"
+        bin: "401347"
+        bucket: "debit"
+      - id: "1000715944"
+        name: "423537 INFINITE"
+        bin: "423537"
+        bucket: "debit"
+      - id: "1000715946"
+        name: "423579 INFINITE"
+        bin: "423579"
+        bucket: "debit"
+      - id: "1000715948"
+        name: "423610 INFINITE"
+        bin: "423610"
+        bucket: "debit"
+      - id: "1000722829"
+        name: "491969 BUS ENH"
+        bin: "491969"
+        bucket: "biz"
+      - id: "9000375021"
+        name: "401138 PLATINUM"
+        bin: "401138"
+        bucket: "debit"
+      - id: "9000375022"
+        name: "401613 SIGNATUR"
+        bin: "401613"
+        bucket: "debit"
+    service_name: "INDIA AREA NET SERVICE"
+    settlement_flag: "8"
+    settlement_currency: INR
+  international:
+    rollup_to:
+      biz_id: "9000375024"
+      biz_name: "IDFC BIZ ISS"
+      debit_id: "9000375025"
+      debit_name: "IDFC DEBIT ISS"
+    funds_xfer_entity: "9000375016"
+    funds_xfer_name: "IDFC"
+    reporting_for:
+      - id: "1000565643"
+        name: "421366 SIGNATUR"
+        bin: "421366"
+        bucket: "biz"
+      - id: "1000594824"
+        name: "IDFC 401347 INT"
+        bin: "401347"
+        bucket: "debit"
+      - id: "1000715943"
+        name: "423537 INFINITE"
+        bin: "423537"
+        bucket: "debit"
+      - id: "1000715945"
+        name: "423579 INFINITE"
+        bin: "423579"
+        bucket: "debit"
+      - id: "1000715947"
+        name: "423610 INFINITE"
+        bin: "423610"
+        bucket: "debit"
+      - id: "1000722828"
+        name: "491969 BUS ENH"
+        bin: "491969"
+        bucket: "biz"
+    service_name: "INTERNATIONAL SETTLEMENT SERVICE"
+    settlement_flag: "0"
+    settlement_currency: INR
+
+cbsmcw:
+  tran_type_map:
+    ATM_fwd: CWDR
+    ATM_rev: CWRR
+    POS_fwd: PRDR
+    POS_rev: PRCR
+    ACQ_ATM_fwd: OWDR
+    ACQ_ATM_rev: OWCR
+    MC_fwd: MCCR
+    MC_rev: MCDR
+
+bin_ranges:
+  - prefix: "401138"
+    length: 16
+  - prefix: "401347"
+    length: 16
+  - prefix: "401613"
+    length: 16
+  - prefix: "421366"
+    length: 16
+  - prefix: "423537"
+    length: 16
+  - prefix: "423579"
+    length: 16
+  - prefix: "423610"
+    length: 16
+  - prefix: "491969"
+    length: 16
+
+nfs_acquirer:
+  participant_id: "IDF"        # NFS participant code for IDFC as acquirer
+  acquirer_id: "800084"        # NFS institution ID for IDFC acquirer (padded to 11 in file)
+
+file_naming:
+  cbsmcw: "CBSMCWISS{ddmmyyyy}.txt"
+  fssgl: "FSS-GL-OUTFILE_{ddmmyyyy}_{hhmmss}.txt"
+  tlf: "tlfx{yyyymmdd}_{ts}.txt"
+  ptlf: "ptlfxIDF{yyyymmdd}_{ts}.txt"
+  epin_dom: "SAVE.INCOMING.ASCII.EPIN.DOM.txt"
+  epin_int: "SAVE.INCOMING.ASCII.EPIN.INT.txt"
+  ep747_dom: "EP747_DOM_{ddmmyyyy}.txt"
+  ep747_int: "EP747_INT_{ddmmyyyy}.txt"
+  nfs_acq: "NFS_ACQ_{ddmmyyyy}.txt"
+  bgl_nfs: "BGL-BALANCE-REPORT-NFS_{ddmmyyyy}.txt"
+
+mastercard:
+  institution_id: MDUI
+  acquiring_institution_id: "7064"
+  acquirer_reference_id: "503726"
+  pan_entry_mode_pos: "051"
+  pan_entry_mode_ecom: "010"
+  tran_orig: "MCRD"
+  # GL accounts for MC POS (domestic and international)
+  pos_dom_gl_account: "96794102017"
+  pos_int_gl_account: "96800102012"
+  pos_dom_section_name: "MC POS PAYABLE DOM A/C"
+  pos_int_section_name: "MC POS PAYABLE INT A/C"
+  network_label: "MDS"
+  bin_ranges:
+    - prefix: "549900"
+      length: 16
+    - prefix: "549904"
+      length: 16
+    - prefix: "543300"
+      length: 16
+    - prefix: "543301"
+      length: 16
+  domestic:
+    reporting_for:
+      - bin: "549900"
+      - bin: "549904"
+      - bin: "543300"
+  international:
+    reporting_for:
+      - bin: "549900"
+      - bin: "549904"
+      - bin: "543301"

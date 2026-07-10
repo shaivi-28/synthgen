@@ -1,0 +1,13 @@
+output/
+sample_files/
+__pycache__/
+*.pyc
+*.pyo
+.env
+deploy.env
+recon-testgen.tar.gz
+.DS_Store
+
+venv/
+fix_encoding.py
+rename_logo.py

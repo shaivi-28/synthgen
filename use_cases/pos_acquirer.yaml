@@ -1,0 +1,5 @@
+id: pos_acquirer
+name: "Card at POS — Bank as Acquirer via NFS"
+status: placeholder
+participant_files: []
+scenarios: []

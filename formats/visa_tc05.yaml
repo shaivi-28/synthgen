@@ -1,0 +1,427 @@
+id: visa_tc05
+name: "VISA T&E Clearing File (TC05/TC07)"
+description: |
+  VISA VisaNet T&E Clearing File format.
+  Each transaction group produces exactly 4 consecutive 168-char records
+  identified by Transaction Code (TC) + TCQ + Transaction Component Sequence Number (TCSN).
+
+  TC values:
+    05 = Sales draft / POS purchase (forward)
+    07 = Cash disbursement (ATM / over-the-counter)
+    25 = POS reversal (TC=05 reversal)
+    27 = Cash disbursement reversal (TC=07 reversal)
+
+  TCSN values per group:
+    0 = Main financial record (the primary record used for reconciliation)
+    1 = Authorization record
+    5 = Settlement record
+    7 = EMV / cryptogram record
+
+encoding: ascii
+line_ending: LF
+record_length: 168
+records_per_transaction: 4
+has_header: false
+has_trailer: false
+
+tc_codes:
+  "05": "POS Sales Draft / Purchase"
+  "07": "Cash Disbursement (ATM)"
+  "25": "POS Reversal"
+  "27": "Cash Disbursement Reversal"
+
+tcsn_codes:
+  "0": "Main financial record"
+  "1": "Authorization record"
+  "5": "Settlement record"
+  "7": "EMV/cryptogram record"
+
+# ──────────────────────────────────────────────────────
+# TCSN=0  Main Financial Record  (168 chars)
+# This is the primary record used for reconciliation.
+# ──────────────────────────────────────────────────────
+fields_tcsn0:
+
+  - name: TRANSACTION_CODE
+    position_start: 1
+    position_end: 2
+    length: 2
+    type: numeric
+    description: "Transaction Code: 05=POS forward, 07=Cash, 25=POS reversal, 27=Cash reversal"
+    mandatory: true
+    values:
+      "05": POS forward
+      "07": Cash disbursement
+      "25": POS reversal
+      "27": Cash reversal
+
+  - name: TRANSACTION_CODE_QUALIFIER
+    position_start: 3
+    position_end: 3
+    length: 1
+    type: numeric
+    description: "Transaction Code Qualifier: 0=Default"
+    default: "0"
+    mandatory: true
+
+  - name: TRANSACTION_COMPONENT_SEQUENCE_NUMBER
+    position_start: 4
+    position_end: 4
+    length: 1
+    type: numeric
+    description: "TCSN: 0=main financial, 1=auth, 5=settlement, 7=EMV"
+    default: "0"
+    mandatory: true
+
+  - name: ACCOUNT_NUMBER
+    position_start: 5
+    position_end: 20
+    length: 16
+    type: numeric
+    pad: "0"
+    pad_direction: left
+    description: "16-digit card PAN (Primary Account Number)"
+    mandatory: true
+
+  - name: ACCOUNT_NUMBER_EXTENSION
+    position_start: 21
+    position_end: 23
+    length: 3
+    type: numeric
+    description: "Account number extension: normally 000"
+    default: "000"
+    mandatory: false
+
+  - name: FLOOR_LIMIT_INDICATOR
+    position_start: 24
+    position_end: 24
+    length: 1
+    type: character
+    description: "Floor limit indicator: Z=not applicable"
+    default: "Z"
+    mandatory: false
+
+  - name: CRB_EXCEPTION_FILE_INDICATOR
+    position_start: 25
+    position_end: 25
+    length: 1
+    type: character
+    description: "CRB/Exception File Indicator: space=not checked"
+    default: " "
+    mandatory: false
+
+  - name: RESERVED_1
+    position_start: 26
+    position_end: 26
+    length: 1
+    type: character
+    description: "Reserved"
+    default: " "
+    mandatory: false
+
+  - name: ACQUIRER_REFERENCE_NUMBER
+    position_start: 27
+    position_end: 49
+    length: 23
+    type: character
+    description: |
+      ARN — unique 23-char reference assigned by the acquirer.
+      Key linking field across VISA TC file, Switch TLF, and CBS.
+      Format: 2-digit acquirer prefix + MMDD + 7-digit filler + 10-digit sequence.
+    mandatory: true
+
+  - name: ACQUIRERS_BUSINESS_ID
+    position_start: 50
+    position_end: 57
+    length: 8
+    type: numeric
+    description: "Acquirer's Business ID (BIN)"
+    default: "00000000"
+    mandatory: false
+
+  - name: PURCHASE_DATE
+    position_start: 58
+    position_end: 61
+    length: 4
+    type: date
+    date_format: MMDD
+    description: "Purchase date in MMDD format"
+    mandatory: true
+
+  - name: DESTINATION_AMOUNT
+    position_start: 62
+    position_end: 73
+    length: 12
+    type: numeric
+    pad: "0"
+    pad_direction: left
+    description: "Destination amount in minor currency units (paise for INR)"
+    mandatory: true
+
+  - name: DESTINATION_CURRENCY_CODE
+    position_start: 74
+    position_end: 76
+    length: 3
+    type: character
+    description: "ISO 4217 destination currency code: 356=INR"
+    default: "356"
+    mandatory: true
+
+  - name: SOURCE_AMOUNT
+    position_start: 77
+    position_end: 88
+    length: 12
+    type: numeric
+    pad: "0"
+    pad_direction: left
+    description: "Source amount (same as destination for domestic INR transactions)"
+    mandatory: true
+
+  - name: SOURCE_CURRENCY_CODE
+    position_start: 89
+    position_end: 91
+    length: 3
+    type: character
+    description: "ISO 4217 source currency code: 356=INR"
+    default: "356"
+    mandatory: true
+
+  - name: MERCHANT_NAME
+    position_start: 92
+    position_end: 116
+    length: 25
+    type: character
+    pad: " "
+    pad_direction: right
+    description: "Merchant / card acceptor name"
+    mandatory: true
+
+  - name: MERCHANT_CITY
+    position_start: 117
+    position_end: 129
+    length: 13
+    type: character
+    pad: " "
+    pad_direction: right
+    description: "Merchant city"
+    mandatory: false
+
+  - name: MERCHANT_COUNTRY_CODE
+    position_start: 130
+    position_end: 132
+    length: 3
+    type: character
+    description: "Merchant country code: IN =India"
+    default: "IN "
+    mandatory: true
+
+  - name: MERCHANT_CATEGORY_CODE
+    position_start: 133
+    position_end: 136
+    length: 4
+    type: numeric
+    pad: "0"
+    pad_direction: left
+    description: |
+      Merchant Category Code (ISO 18245).
+      Common values: 5411=Grocery, 5812=Restaurant, 5999=Retail, 6011=Cash/ATM
+    mandatory: true
+
+  - name: MERCHANT_ZIP
+    position_start: 137
+    position_end: 141
+    length: 5
+    type: numeric
+    pad: "0"
+    pad_direction: left
+    description: "Merchant postal/ZIP code: 00000 if not applicable"
+    default: "00000"
+    mandatory: false
+
+  - name: MERCHANT_STATE_PROVINCE
+    position_start: 142
+    position_end: 144
+    length: 3
+    type: character
+    description: "Merchant state / province code"
+    default: "   "
+    mandatory: false
+
+  - name: REQUESTED_PAYMENT_SERVICE
+    position_start: 145
+    position_end: 145
+    length: 1
+    type: character
+    description: "Requested payment service: 1=no service requested"
+    default: "1"
+    mandatory: false
+
+  - name: NUMBER_OF_PAYMENT_FORMS
+    position_start: 146
+    position_end: 146
+    length: 1
+    type: character
+    description: "Number of payment forms: 0=not applicable"
+    default: "0"
+    mandatory: false
+
+  - name: USAGE_CODE
+    position_start: 147
+    position_end: 147
+    length: 1
+    type: numeric
+    description: "Usage code: 1=first presentment, 9=dispute/chargeback"
+    default: "1"
+    mandatory: true
+
+  - name: REASON_CODE
+    position_start: 148
+    position_end: 149
+    length: 2
+    type: numeric
+    description: "Reason code: 00=normal, 05=chargeback"
+    default: "00"
+    mandatory: true
+
+  - name: SETTLEMENT_FLAG
+    position_start: 150
+    position_end: 150
+    length: 1
+    type: character
+    description: "Settlement flag: N=not settled yet"
+    default: "N"
+    mandatory: false
+
+  - name: AUTH_CHARACTERISTICS_INDICATOR
+    position_start: 151
+    position_end: 151
+    length: 1
+    type: character
+    description: "Authorization characteristics indicator: 0=standard"
+    default: "0"
+    mandatory: false
+
+  - name: AUTHORIZATION_CODE
+    position_start: 152
+    position_end: 157
+    length: 6
+    type: character
+    pad: " "
+    pad_direction: right
+    description: "6-char alphanumeric authorization code"
+    mandatory: true
+
+  - name: POS_TERMINAL_CAPABILITY
+    position_start: 158
+    position_end: 158
+    length: 1
+    type: character
+    description: "POS terminal capability: 4=chip capable"
+    default: "4"
+    mandatory: false
+
+  - name: RESERVED_2
+    position_start: 159
+    position_end: 159
+    length: 1
+    type: character
+    description: "Reserved"
+    default: " "
+    mandatory: false
+
+  - name: CARDHOLDER_ID_METHOD
+    position_start: 160
+    position_end: 160
+    length: 1
+    type: character
+    description: "Cardholder identification method: 1=PIN"
+    default: "1"
+    mandatory: false
+
+  - name: COLLECTION_ONLY_FLAG
+    position_start: 161
+    position_end: 161
+    length: 1
+    type: character
+    description: "Collection-only flag: space=not collection-only"
+    default: " "
+    mandatory: false
+
+  - name: POS_ENTRY_MODE
+    position_start: 162
+    position_end: 163
+    length: 2
+    type: character
+    description: "POS entry mode: 07=chip read, 01=manual, 02=magnetic stripe"
+    default: "07"
+    mandatory: false
+
+  - name: CENTRAL_PROCESSING_DATE
+    position_start: 164
+    position_end: 167
+    length: 4
+    type: character
+    description: |
+      Central processing date in YDDD format.
+      Y = last digit of year (e.g. 6 for 2026)
+      DDD = day of year zero-padded to 3 digits (e.g. 047 for Feb 16)
+      Example: 6047 = day 47 of 2026 = Feb 16 2026
+    mandatory: true
+
+  - name: REIMBURSEMENT_ATTRIBUTE
+    position_start: 168
+    position_end: 168
+    length: 1
+    type: character
+    description: "Reimbursement attribute: 0=standard"
+    default: "0"
+    mandatory: false
+
+# ──────────────────────────────────────────────────────
+# TCSN=1  Authorization Record  (168 chars, template-based)
+# ──────────────────────────────────────────────────────
+fields_tcsn1:
+  description: |
+    Authorization record. Contains the online authorization response data.
+    Partially fixed/template-driven; key fields: auth code, response, terminal data.
+  notable_fields:
+    - "Pos 1-4: TC+TCQ+TCSN = same TC, TCQ=0, TCSN=1"
+    - "Contains PAN fragment, auth code, terminal capability flags"
+    - "Response code embedded in acquirer response data"
+
+# ──────────────────────────────────────────────────────
+# TCSN=5  Settlement Record  (168 chars, template-based)
+# ──────────────────────────────────────────────────────
+fields_tcsn5:
+  description: |
+    Settlement record. Contains BIN routing, settlement amount and interchange data.
+    Used by VISA to determine settlement obligations.
+  notable_fields:
+    - "Pos 1-4: TC+TCQ+TCSN = same TC, TCQ=0, TCSN=5"
+    - "Contains BIN, settlement amounts, interchange fee indicators"
+
+# ──────────────────────────────────────────────────────
+# TCSN=7  EMV/Cryptogram Record  (168 chars, template-based)
+# ──────────────────────────────────────────────────────
+fields_tcsn7:
+  description: |
+    EMV / cryptogram record. Contains chip authentication data (ARQC/ARPC, ATC, IAD).
+    Optional but present for all chip transactions.
+  notable_fields:
+    - "Pos 1-4: TC+TCQ+TCSN = same TC, TCQ=0, TCSN=7"
+    - "Contains Application Transaction Counter (ATC), cryptogram, issuer authentication"
+
+# ──────────────────────────────────────────────────────
+# RECONCILIATION LINKING KEYS
+# ──────────────────────────────────────────────────────
+linkage_keys:
+  primary:   ACQUIRER_REFERENCE_NUMBER   # ARN — unique per transaction
+  secondary: ACCOUNT_NUMBER              # Card PAN
+  tertiary:  PURCHASE_DATE               # Date
+
+sample_records:
+  note: "Each sample shows one complete 168-char line"
+  tcsn0_pos: "05004405232017798960000Z  74578116047000113384446000000000216000000072346356000000069700417CHIKINOFF                BISHKEK      KG 581200000     1000N0394765 1 0760480"
+  tcsn1:     "0501   A1249    000000                                                     983SY0201392893     J392893 000000000000  6047 0    5 0                           000000000  "
+  tcsn5:     "050539604740453301800000006970041700        0000 000000000000                              000000014686238C0711435107110169000000000000I             0000000000000000 C "
+  tcsn7:     "050700001260216E0F848417        C6526829002B20207C2B09B9231F60F30112000000000003A02000000000069700000000000000000000060000000000000000000000000000000020700000         "

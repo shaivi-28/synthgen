@@ -1,0 +1,418 @@
+id: idfc_mc_issuer
+name: "Mastercard POS Issuer — IDFC"
+bank: idfc
+network: Mastercard
+status: active
+description: >
+  IDFC FIRST Bank as Mastercard card issuer (POS only — ATM uses T464).
+  Generates 4 files per run: CBSMCW (NETWORK=MDS), FSSGL (MC GL accounts),
+  PTLF (TERM_FIID=MDUI, PAN entry 051), T112 (MTI=1240, FC=200).
+
+participant_files:
+  - id: t112
+    name: T112
+    description: "Mastercard network clearing file — MTI=1240, Function Code=200, Processing Code 00/09/18/12"
+  - id: ptlf
+    name: PTLF
+    description: "Switch POS Transaction Log — TERM_FIID=MDUI, TERM_LN=MDUI, PAN Entry 051=POS"
+  - id: cbsmcw
+    name: CBSMCW
+    description: "CBS card-level file — NETWORK=MDS, TRAN_TYPE=PRDR/PRCR"
+  - id: fssgl
+    name: FSSGL
+    description: "CBS GL settlement file — MC POS GL accounts (96794102017 / 96800102012)"
+
+linkage_keys:
+  switch_cbs:
+    - card_no_f6l3
+    - auth_code
+    - rrn
+  switch_network:
+    - card_no_f6l3
+    - auth_code
+    - terminal_id
+  cbs_network:
+    - card_no_f6l3
+    - auth_code
+    - terminal_id
+
+recon_logic:
+  domestic: "Card No + Auth code + Trans date + Trans Amt"
+  international: "Card No + Auth code + Trans date"
+
+amount_status:
+  cbs:
+    "1":  "ENTRY_TYPE = CR"
+    "-1": "ENTRY_TYPE = DR"
+    "NULL": "Missing"
+  switch:
+    "1":  "RESPONSECODE=001, auth_TYPE=0210"
+    "-1": "RESPONSECODE=001, auth_TYPE=0420"
+    "0":  "RESPONSECODE!=000, auth_TYPE=0210"
+    "NULL": "Missing"
+  network:
+    "1":  "MTI=1240, FC=200, PC in (00,09,18,12), MRI blank"
+    "-1": "MTI=1240, FC=200, PC in (00,09,18,12), MRI=R"
+    "0":  "MTI != 1240"
+    "NULL": "Missing"
+
+scenarios:
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP A — PERFECT MATCH
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: a01_dom_pos_ok
+    code: A01
+    group: A
+    name: "DOM POS — Perfect Match"
+    tran_category: D
+    is_ok: true
+    weight: 20
+    action: OK
+    file_states: {t112: 1, ptlf: 1, cbsmcw: 1, fssgl: 1, cbs: 1}
+
+  - id: a02_int_pos_ok
+    code: A02
+    group: A
+    name: "INT POS — Perfect Match"
+    tran_category: I
+    is_ok: true
+    weight: 15
+    action: OK
+    file_states: {t112: 1, ptlf: 1, cbsmcw: 1, fssgl: 1, cbs: 1}
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP B — FULL REVERSAL (OK)
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: b01_dom_pos_full_rev
+    code: B01
+    group: B
+    name: "DOM POS — Full Reversal (all files)"
+    tran_category: D
+    is_ok: true
+    weight: 8
+    action: OK
+    file_states: {t112: -1, ptlf: -1, cbsmcw: -1, fssgl: -1, cbs: -1}
+
+  - id: b02_int_pos_full_rev
+    code: B02
+    group: B
+    name: "INT POS — Full Reversal (all files)"
+    tran_category: I
+    is_ok: true
+    weight: 5
+    action: OK
+    file_states: {t112: -1, ptlf: -1, cbsmcw: -1, fssgl: -1, cbs: -1}
+
+  - id: b03_dom_pos_fwd_rev_pair
+    code: B03
+    group: B
+    name: "DOM POS — Fwd + Rev same day (net zero OK)"
+    tran_category: D
+    is_ok: true
+    weight: 5
+    action: OK
+    file_states: {t112: [1,1], ptlf: [1,1], cbs: [1,1]}
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP I — AMOUNT MISMATCHES
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: i01_t112_amt_high
+    code: I01
+    group: I
+    name: "DOM POS — T112 amount +500 Rs higher"
+    tran_category: D
+    is_ok: false
+    weight: 4
+    action: AMOUNT_MISMATCH
+    file_states: {t112: 1, ptlf: 1, cbs: 1}
+    amt_delta:
+      t112: 50000
+
+  - id: i02_cbs_amt_high
+    code: I02
+    group: I
+    name: "DOM POS — CBS amount +500 Rs higher"
+    tran_category: D
+    is_ok: false
+    weight: 4
+    action: AMOUNT_MISMATCH
+    file_states: {t112: 1, ptlf: 1, cbs: 1}
+    amt_delta:
+      cbs: 50000
+
+  - id: i03_ptlf_amt_low
+    code: I03
+    group: I
+    name: "DOM POS — PTLF amount -200 Rs lower"
+    tran_category: D
+    is_ok: false
+    weight: 3
+    action: AMOUNT_MISMATCH
+    file_states: {t112: 1, ptlf: 1, cbs: 1}
+    amt_delta:
+      ptlf: -20000
+
+  - id: i04_int_t112_amt_high
+    code: I04
+    group: I
+    name: "INT POS — T112 amount +500 Rs higher"
+    tran_category: I
+    is_ok: false
+    weight: 3
+    action: AMOUNT_MISMATCH
+    file_states: {t112: 1, ptlf: 1, cbs: 1}
+    amt_delta:
+      t112: 50000
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP J — DATE MISMATCHES
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: j01_cbs_date_plus1
+    code: J01
+    group: J
+    name: "DOM POS — CBS date +1 day"
+    tran_category: D
+    is_ok: false
+    weight: 3
+    action: DATE_MISMATCH
+    file_states: {t112: 1, ptlf: 1, cbs: 1}
+    date_delta:
+      cbs: 1
+
+  - id: j02_t112_date_plus1
+    code: J02
+    group: J
+    name: "DOM POS — T112 date +1 day"
+    tran_category: D
+    is_ok: false
+    weight: 3
+    action: DATE_MISMATCH
+    file_states: {t112: 1, ptlf: 1, cbs: 1}
+    date_delta:
+      t112: 1
+
+  - id: j03_ptlf_date_plus1
+    code: J03
+    group: J
+    name: "DOM POS — PTLF date +1 day"
+    tran_category: D
+    is_ok: false
+    weight: 2
+    action: DATE_MISMATCH
+    file_states: {t112: 1, ptlf: 1, cbs: 1}
+    date_delta:
+      ptlf: 1
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP K — DUPLICATES
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: k01_dup_t112
+    code: K01
+    group: K
+    name: "DOM POS — Duplicate T112 row"
+    tran_category: D
+    is_ok: false
+    weight: 3
+    action: DUPLICATE
+    file_states: {t112: 1, ptlf: 1, cbs: 1}
+    dup_files: [t112]
+
+  - id: k02_dup_cbs
+    code: K02
+    group: K
+    name: "DOM POS — Duplicate CBS row"
+    tran_category: D
+    is_ok: false
+    weight: 3
+    action: DUPLICATE
+    file_states: {t112: 1, ptlf: 1, cbs: 1}
+    dup_files: [cbs]
+
+  - id: k03_dup_ptlf
+    code: K03
+    group: K
+    name: "DOM POS — Duplicate PTLF row"
+    tran_category: D
+    is_ok: false
+    weight: 2
+    action: DUPLICATE
+    file_states: {t112: 1, ptlf: 1, cbs: 1}
+    dup_files: [ptlf]
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP L — MISSING FILES
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: l01_dom_t112_missing
+    code: L01
+    group: L
+    name: "DOM POS — T112 missing, PTLF+CBS present"
+    tran_category: D
+    is_ok: false
+    weight: 3
+    action: MISSING_NETWORK_FILE
+    file_states: {ptlf: 1, cbs: 1}
+
+  - id: l02_int_t112_missing
+    code: L02
+    group: L
+    name: "INT POS — T112 missing, PTLF+CBS present"
+    tran_category: I
+    is_ok: false
+    weight: 2
+    action: MISSING_NETWORK_FILE
+    file_states: {ptlf: 1, cbs: 1}
+
+  - id: l03_dom_ptlf_missing
+    code: L03
+    group: L
+    name: "DOM POS — PTLF missing, T112+CBS present"
+    tran_category: D
+    is_ok: false
+    weight: 3
+    action: MISSING_SWITCH_FILE
+    file_states: {t112: 1, cbs: 1}
+
+  - id: l04_int_ptlf_missing
+    code: L04
+    group: L
+    name: "INT POS — PTLF missing, T112+CBS present"
+    tran_category: I
+    is_ok: false
+    weight: 2
+    action: MISSING_SWITCH_FILE
+    file_states: {t112: 1, cbs: 1}
+
+  - id: l05_dom_cbs_missing
+    code: L05
+    group: L
+    name: "DOM POS — CBS missing, T112+PTLF present"
+    tran_category: D
+    is_ok: false
+    weight: 3
+    action: MISSING_CBS_FILE
+    file_states: {t112: 1, ptlf: 1}
+
+  - id: l06_int_cbs_missing
+    code: L06
+    group: L
+    name: "INT POS — CBS missing, T112+PTLF present"
+    tran_category: I
+    is_ok: false
+    weight: 2
+    action: MISSING_CBS_FILE
+    file_states: {t112: 1, ptlf: 1}
+
+  - id: l07_dom_t112_cbs_missing
+    code: L07
+    group: L
+    name: "DOM POS — T112+CBS missing, PTLF only"
+    tran_category: D
+    is_ok: false
+    weight: 2
+    action: MISSING_NETWORK_AND_CBS
+    file_states: {ptlf: 1}
+
+  - id: l08_dom_ptlf_cbs_missing
+    code: L08
+    group: L
+    name: "DOM POS — PTLF+CBS missing, T112 only"
+    tran_category: D
+    is_ok: false
+    weight: 2
+    action: MISSING_SWITCH_AND_CBS
+    file_states: {t112: 1}
+
+  - id: l09_dom_all_missing
+    code: L09
+    group: L
+    name: "DOM POS — All files missing"
+    tran_category: D
+    is_ok: false
+    weight: 1
+    action: ALL_MISSING
+    file_states: {}
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP M — CROSSFIRE / DIRECTION MISMATCH
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: m01_dom_t112_rev_cbs_fwd
+    code: M01
+    group: M
+    name: "DOM POS — T112 reversal, CBS forward (crossfire)"
+    tran_category: D
+    is_ok: false
+    weight: 3
+    action: CROSSFIRE_MISMATCH
+    file_states: {t112: -1, ptlf: 1, cbs: 1}
+
+  - id: m02_dom_cbs_rev_t112_fwd
+    code: M02
+    group: M
+    name: "DOM POS — CBS reversal, T112 forward (crossfire)"
+    tran_category: D
+    is_ok: false
+    weight: 3
+    action: CROSSFIRE_MISMATCH
+    file_states: {t112: 1, ptlf: 1, cbs: -1}
+
+  - id: m03_dom_ptlf_rev_others_fwd
+    code: M03
+    group: M
+    name: "DOM POS — PTLF reversal, T112+CBS forward"
+    tran_category: D
+    is_ok: false
+    weight: 2
+    action: REVERSAL_MISMATCH
+    file_states: {t112: 1, ptlf: -1, cbs: 1}
+
+  - id: m04_int_t112_rev_cbs_fwd
+    code: M04
+    group: M
+    name: "INT POS — T112 reversal, CBS forward (crossfire)"
+    tran_category: I
+    is_ok: false
+    weight: 2
+    action: CROSSFIRE_MISMATCH
+    file_states: {t112: -1, ptlf: 1, cbs: 1}
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP N — T112 REVERSAL + PTLF/CBS REVERSAL (OK variants)
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: n01_dom_t112_rev_ptlf_fwd_cbs_rev
+    code: N01
+    group: N
+    name: "DOM POS — T112 rev, PTLF fwd, CBS rev"
+    tran_category: D
+    is_ok: true
+    weight: 4
+    action: OK
+    file_states: {t112: -1, ptlf: 1, cbs: -1}
+
+  - id: n02_dom_t112_fwd_ptlf_rev_cbs_fwd
+    code: N02
+    group: N
+    name: "DOM POS — T112 fwd, PTLF rev, CBS fwd"
+    tran_category: D
+    is_ok: true
+    weight: 4
+    action: OK
+    file_states: {t112: 1, ptlf: -1, cbs: 1}
+
+  - id: n03_int_t112_rev_ptlf_fwd_cbs_rev
+    code: N03
+    group: N
+    name: "INT POS — T112 rev, PTLF fwd, CBS rev"
+    tran_category: I
+    is_ok: true
+    weight: 3
+    action: OK
+    file_states: {t112: -1, ptlf: 1, cbs: -1}

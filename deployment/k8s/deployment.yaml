@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: synthgen
+  namespace: synthgen
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: synthgen
+  template:
+    metadata:
+      labels:
+        app: synthgen
+        workload: synthgen
+    spec:
+      nodeSelector:
+        team: synthgen
+        workload: synthgen
+      tolerations:
+        - key: workload
+          operator: Equal
+          value: synthgen
+          effect: NoSchedule
+      containers:
+        - name: synthgen
+          image: ${ECR_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5050
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5050
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5050
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+          volumeMounts:
+            - name: output
+              mountPath: /app/output
+      volumes:
+       - name: output
+         persistentVolumeClaim:
+          claimName: synthgen-output-pvc

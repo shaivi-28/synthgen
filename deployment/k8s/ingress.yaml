@@ -1,0 +1,34 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: synthgen
+  namespace: synthgen
+  annotations:
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:975050300331:certificate/c7612594-f050-40b0-bf81-d19740fa71cc
+    alb.ingress.kubernetes.io/group.name: internal-staging
+    alb.ingress.kubernetes.io/healthcheck-path: /
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+    alb.ingress.kubernetes.io/load-balancer-name: eks-tkzn-staging-lb
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/security-groups: sg-0c1d44818bf605e0c
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/subnets: subnet-03477c360ab729c26, subnet-02bd9e2d7c5b989f0
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/vpc-id: vpc-016005c412fb86036
+    kubernetes.io/ingress.class: alb
+  labels:
+    app.kubernetes.io/name: synthgen
+spec:
+  ingressClassName: alb
+  rules:
+    - host: synthgen.staging.osfin.ai
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: synthgen
+                port:
+                  number: 80

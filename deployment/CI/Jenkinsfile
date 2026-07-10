@@ -1,0 +1,137 @@
+def getDockerTag(prefix, buildNumber) {
+    return "${prefix}-${buildNumber}".replaceAll("/", "_")
+}
+
+pipeline {
+    agent {
+        label 'aws-stg-eks'
+    }
+
+    environment {
+        ECR_REGISTRY = "975050300331.dkr.ecr.ap-south-1.amazonaws.com"
+        IMAGE_NAME   = "synthgen"
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+
+                sh '''
+                    echo "Workspace: $WORKSPACE"
+                    ls -la
+                '''
+            }
+        }
+
+        stage('Init') {
+            steps {
+                script {
+                    def prefix = env.CHANGE_ID ?
+                        "synthgen-MR-${env.CHANGE_ID}" :
+                        "synthgen-${env.BRANCH_NAME}"
+
+                    env.IMAGE_TAG = getDockerTag(prefix, env.BUILD_NUMBER)
+
+                    currentBuild.description = "TAG=${env.IMAGE_TAG}"
+
+                    echo "IMAGE_TAG=${env.IMAGE_TAG}"
+                    echo "BRANCH_NAME=${env.BRANCH_NAME}"
+                }
+            }
+        }
+
+        stage('Python Validation') {
+            steps {
+                sh '''
+                    python3 -m pip install --user -r requirements.txt
+
+                    find . -name "*.py" -print0 | xargs -0 python3 -m py_compile
+                  
+                '''
+            }
+        }
+
+        stage('Build & Push Image') {
+            steps {
+                script {
+                    docker.withRegistry(
+                        "https://${ECR_REGISTRY}",
+                        "ecr:ap-south-1:synthgen-aws-jenkins"
+                    ) {
+                        sh '''
+                            docker buildx inspect osfin-buildx >/dev/null 2>&1 || \
+                            docker buildx create --name osfin-buildx --use
+                            
+                            docker buildx create --name osfin-buildx --use || true
+
+                            docker buildx build \
+                              --provenance=false \
+                              --platform linux/amd64,linux/arm64 \
+                              -f deployment/Dockerfile \
+                              -t ${ECR_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} \
+                              --push \
+                              .
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to EKS') {
+            steps {
+            
+                sh '''
+                    # Authenticate kubectl to EKS
+                    aws eks update-kubeconfig \
+                        --region ap-south-1 \
+                        --name staging-eks
+
+                    export IMAGE_TAG=${IMAGE_TAG}
+                    export ECR_REGISTRY=${ECR_REGISTRY}
+                    export IMAGE_NAME=${IMAGE_NAME}
+
+                    kubectl apply -f deployment/k8s/namespace.yaml
+
+                    kubectl apply -f deployment/k8s/pvc.yaml
+
+                    envsubst < deployment/k8s/deployment.yaml | kubectl apply -f -
+
+                    kubectl apply -f deployment/k8s/service.yaml
+                    
+                    kubectl apply -f deployment/k8s/ingress.yaml
+
+                    ./deployment/k8s/create-route53-record.sh
+
+
+                    # Wait for rollout — fails the build if pods don't become ready in 120s
+                    kubectl rollout status deployment/synthgen \
+                        --namespace synthgen \
+                        --timeout=120s
+                '''
+                
+            }
+        }
+
+    }
+
+    post {
+        always {
+            cleanWs(
+                cleanWhenAborted: true,
+                cleanWhenFailure: true,
+                cleanWhenNotBuilt: true,
+                cleanWhenSuccess: true,
+                cleanWhenUnstable: true,
+                deleteDirs: true,
+                notFailBuild: true,
+                disableDeferredWipeout: true
+            )
+        }
+
+        unstable {
+            echo "Build unstable due to scan findings"
+        }
+    }
+}

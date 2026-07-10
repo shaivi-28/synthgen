@@ -1,0 +1,395 @@
+id: nfs_interchange
+name: "NFS Interchange Settlement File"
+description: "NFS network interchange file. Fixed-width, 407 chars per transaction record."
+encoding: ascii
+line_ending: LF
+record_length: 407
+has_header: true
+has_trailer: true
+
+header_fields:
+  - name: FILE_TYPE
+    position_start: 1
+    position_end: 3
+    value: "NFS"
+  - name: SETTLEMENT_DATE
+    position_start: 4
+    position_end: 9
+    type: date
+    date_format: YYMMDD
+
+trailer_fields:
+  - name: RECORD_COUNT
+    position_start: 1
+    position_end: 10
+    type: numeric
+    pad: "0"
+    pad_direction: left
+  - name: TOTAL_AMOUNT
+    position_start: 11
+    position_end: 25
+    type: numeric
+    pad: "0"
+    pad_direction: left
+
+fields:
+  - name: PARTICIPANT_ID
+    position_start: 1
+    position_end: 3
+    length: 3
+    type: character
+    pad: " "
+    pad_direction: right
+    description: "NFS Participant ID"
+    mandatory: true
+
+  - name: TRANSACTION_TYPE
+    position_start: 4
+    position_end: 5
+    length: 2
+    type: character
+    description: "Transaction type code"
+    mandatory: true
+    # W1=Withdrawal, BI=Balance Inquiry, TF=Transfer, DP=Deposit, RV=Reversal
+
+  - name: FROM_ACCOUNT_TYPE
+    position_start: 6
+    position_end: 7
+    length: 2
+    type: character
+    description: "From account type: 10=Savings, 20=Current, 30=Credit"
+    mandatory: true
+
+  - name: TO_ACCOUNT_TYPE
+    position_start: 8
+    position_end: 9
+    length: 2
+    type: character
+    description: "To account type"
+    mandatory: false
+    default: "  "
+
+  - name: TRANSACTION_SERIAL_NUMBER
+    position_start: 10
+    position_end: 21
+    length: 12
+    type: numeric
+    pad: "0"
+    pad_direction: left
+    description: "Unique transaction serial number (key link field = RRN)"
+    mandatory: true
+
+  - name: RESPONSE_CODE
+    position_start: 22
+    position_end: 23
+    length: 2
+    type: character
+    description: "ISO 8583 response code: 00=Approved"
+    mandatory: true
+
+  - name: PAN_NUMBER
+    position_start: 24
+    position_end: 42
+    length: 19
+    type: character
+    pad: " "
+    pad_direction: right
+    description: "Primary Account Number (card number)"
+    mandatory: true
+
+  - name: MEMBER_NUMBER
+    position_start: 43
+    position_end: 43
+    length: 1
+    type: character
+    default: "1"
+    mandatory: false
+
+  - name: APPROVAL_NUMBER
+    position_start: 44
+    position_end: 49
+    length: 6
+    type: character
+    pad: " "
+    pad_direction: right
+    description: "Authorization approval code"
+    mandatory: false
+
+  - name: SYSTEM_TRACE_AUDIT_NUMBER
+    position_start: 50
+    position_end: 61
+    length: 12
+    type: numeric
+    pad: "0"
+    pad_direction: left
+    description: "STAN — matches Switch TLF sequence number"
+    mandatory: true
+
+  - name: TRANSACTION_DATE
+    position_start: 62
+    position_end: 67
+    length: 6
+    type: date
+    date_format: YYMMDD
+    mandatory: true
+
+  - name: TRANSACTION_TIME
+    position_start: 68
+    position_end: 73
+    length: 6
+    type: time
+    time_format: HHMMSS
+    mandatory: true
+
+  - name: MERCHANT_CATEGORY_CODE
+    position_start: 74
+    position_end: 77
+    length: 4
+    type: numeric
+    pad: "0"
+    pad_direction: left
+    description: "MCC — 6011 for ATM cash withdrawal"
+    default: "6011"
+    mandatory: false
+
+  - name: CARD_ACCEPTOR_SETTLEMENT_DATE
+    position_start: 78
+    position_end: 83
+    length: 6
+    type: date
+    date_format: YYMMDD
+    description: "Settlement date for the card acceptor (acquirer)"
+    mandatory: true
+
+  - name: CARD_ACCEPTOR_ID
+    position_start: 84
+    position_end: 98
+    length: 15
+    type: character
+    pad: " "
+    pad_direction: right
+    description: "Card acceptor / merchant ID"
+    mandatory: true
+
+  - name: CARD_ACCEPTOR_TERMINAL_ID
+    position_start: 99
+    position_end: 106
+    length: 8
+    type: character
+    pad: " "
+    pad_direction: right
+    description: "ATM Terminal ID (key link field)"
+    mandatory: true
+
+  - name: CARD_ACCEPTOR_TERMINAL_LOCATION
+    position_start: 107
+    position_end: 146
+    length: 40
+    type: character
+    pad: " "
+    pad_direction: right
+    description: "Terminal location description"
+    mandatory: false
+
+  - name: ACQUIRER_ID
+    position_start: 147
+    position_end: 157
+    length: 11
+    type: character
+    pad: " "
+    pad_direction: right
+    description: "Acquiring institution ID"
+    mandatory: true
+
+  - name: NETWORK_ID
+    position_start: 158
+    position_end: 160
+    length: 3
+    type: character
+    description: "Network identifier: NFS"
+    default: "NFS"
+    mandatory: true
+
+  - name: ACCOUNT_1_NUMBER
+    position_start: 161
+    position_end: 179
+    length: 19
+    type: character
+    pad: " "
+    pad_direction: right
+    description: "Primary account number (from account)"
+    mandatory: true
+
+  - name: ACCOUNT_1_BRANCH_ID
+    position_start: 180
+    position_end: 189
+    length: 10
+    type: character
+    pad: " "
+    pad_direction: right
+    mandatory: false
+
+  - name: ACCOUNT_2_NUMBER
+    position_start: 190
+    position_end: 208
+    length: 19
+    type: character
+    pad: " "
+    pad_direction: right
+    mandatory: false
+    default: "                   "
+
+  - name: ACCOUNT_2_BRANCH_ID
+    position_start: 209
+    position_end: 218
+    length: 10
+    type: character
+    pad: " "
+    pad_direction: right
+    mandatory: false
+
+  - name: TRANSACTION_CURRENCY_CODE
+    position_start: 219
+    position_end: 221
+    length: 3
+    type: character
+    description: "ISO 4217 currency code: 356=INR"
+    default: "356"
+    mandatory: true
+
+  - name: TRANSACTION_AMOUNT
+    position_start: 222
+    position_end: 236
+    length: 15
+    type: numeric
+    pad: "0"
+    pad_direction: left
+    description: "Transaction amount in paise (multiply by 100)"
+    mandatory: true
+
+  - name: ACTUAL_TRANSACTION_AMOUNT
+    position_start: 237
+    position_end: 251
+    length: 15
+    type: numeric
+    pad: "0"
+    pad_direction: left
+    description: "Actual dispensed/processed amount"
+    mandatory: true
+
+  - name: TRANSACTION_ACTIVITY_FEE
+    position_start: 252
+    position_end: 266
+    length: 15
+    type: numeric
+    pad: "0"
+    pad_direction: left
+    description: "Interchange fee"
+    mandatory: false
+    default: "000000000000000"
+
+  - name: ISSUER_SETTLEMENT_CURRENCY_CODE
+    position_start: 267
+    position_end: 269
+    length: 3
+    type: character
+    default: "356"
+    mandatory: true
+
+  - name: ISSUER_SETTLEMENT_AMOUNT
+    position_start: 270
+    position_end: 284
+    length: 15
+    type: numeric
+    pad: "0"
+    pad_direction: left
+    mandatory: true
+
+  - name: ISSUER_SETTLEMENT_FEE
+    position_start: 285
+    position_end: 299
+    length: 15
+    type: numeric
+    pad: "0"
+    pad_direction: left
+    mandatory: false
+    default: "000000000000000"
+
+  - name: ISSUER_SETTLEMENT_PROCESSING_FEE
+    position_start: 300
+    position_end: 314
+    length: 15
+    type: numeric
+    pad: "0"
+    pad_direction: left
+    mandatory: false
+    default: "000000000000000"
+
+  - name: CARDHOLDER_BILLING_CURRENCY_CODE
+    position_start: 315
+    position_end: 317
+    length: 3
+    type: character
+    default: "356"
+    mandatory: true
+
+  - name: CARDHOLDER_BILLING_AMOUNT
+    position_start: 318
+    position_end: 332
+    length: 15
+    type: numeric
+    pad: "0"
+    pad_direction: left
+    mandatory: true
+
+  - name: CARDHOLDER_BILLING_ACTIVITY_FEE
+    position_start: 333
+    position_end: 347
+    length: 15
+    type: numeric
+    pad: "0"
+    pad_direction: left
+    mandatory: false
+    default: "000000000000000"
+
+  - name: CARDHOLDER_BILLING_PROCESSING_FEE
+    position_start: 348
+    position_end: 362
+    length: 15
+    type: numeric
+    pad: "0"
+    pad_direction: left
+    mandatory: false
+    default: "000000000000000"
+
+  - name: CARDHOLDER_BILLING_SERVICE_FEE
+    position_start: 363
+    position_end: 377
+    length: 15
+    type: numeric
+    pad: "0"
+    pad_direction: left
+    mandatory: false
+    default: "000000000000000"
+
+  - name: TRANSACTION_ISSUER_CONVERSION_RATE
+    position_start: 378
+    position_end: 392
+    length: 15
+    type: numeric_decimal
+    decimal_places: 9
+    pad: "0"
+    pad_direction: left
+    default: "000001000000000"
+    mandatory: false
+
+  - name: TRANSACTION_CARDHOLDER_CONVERSION_RATE
+    position_start: 393
+    position_end: 407
+    length: 15
+    type: numeric_decimal
+    decimal_places: 9
+    pad: "0"
+    pad_direction: left
+    default: "000001000000000"
+    mandatory: false

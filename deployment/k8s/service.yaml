@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: synthgen
+  namespace: synthgen
+spec:
+  selector:
+    app: synthgen
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5050
+  type: ClusterIP

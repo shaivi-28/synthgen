@@ -1,0 +1,3282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recon Test Data Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #151820;
+    --surface2: #1c2030;
+    --border: #252b3a;
+    --border2: #2e3650;
+    --text: #e2e8f0;
+    --text2: #8892a4;
+    --text3: #4a5568;
+    --accent: #4f8ef7;
+    --accent2: #2d5abf;
+    --green: #34d399;
+    --green-bg: #0a2318;
+    --amber: #fbbf24;
+    --amber-bg: #231a05;
+    --red: #f87171;
+    --red-bg: #230a0a;
+    --purple: #a78bfa;
+    --purple-bg: #1a1030;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; min-height: 100vh; }
+
+  /* ── LAYOUT ── */
+  .layout { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+  .sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 0; display: flex; flex-direction: column; }
+  .main { display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── SIDEBAR ── */
+  .sidebar-header { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
+  .logo { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
+  .logo-sub { font-size: 11px; color: var(--text3); letter-spacing: 0.03em; }
+
+  .sidebar-section { padding: 16px 12px 8px; }
+  .sidebar-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); padding: 0 8px; margin-bottom: 6px; }
+
+  .uc-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; cursor: pointer; transition: background 0.15s; margin-bottom: 2px; }
+  .uc-item:hover { background: var(--surface2); }
+  .uc-item.active { background: #1a2544; border: 1px solid #2d4078; }
+  .uc-item.disabled { opacity: 0.4; cursor: default; }
+  .uc-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .uc-dot.active-uc { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .uc-dot.placeholder { background: var(--text3); }
+  .uc-name { font-size: 12px; line-height: 1.4; color: var(--text); flex: 1; }
+  .uc-item.disabled .uc-name { color: var(--text3); }
+  .uc-badge { font-size: 9px; font-family: var(--mono); padding: 2px 5px; border-radius: 3px; background: var(--surface); border: 1px solid var(--border); color: var(--text3); white-space: nowrap; }
+
+  /* ── TOP BAR ── */
+  .topbar { padding: 16px 28px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface); }
+  .topbar-title { font-size: 15px; font-weight: 500; }
+  .topbar-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .status-chip { font-size: 10px; font-family: var(--mono); padding: 3px 8px; border-radius: 4px; }
+  .status-active { background: var(--green-bg); color: var(--green); border: 1px solid #1a5c3a; }
+  .status-placeholder { background: var(--surface2); color: var(--text3); border: 1px solid var(--border); }
+
+  /* ── CONTENT ── */
+  .content { flex: 1; overflow-y: auto; padding: 24px 28px; }
+
+  /* ── PANELS ── */
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; }
+  .panel-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+  .panel-title { font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text2); }
+  .panel-body { padding: 18px; }
+
+  /* ── SCENARIO TABLE ── */
+  .scenario-grid { display: grid; gap: 8px; }
+  .scenario-row { display: grid; grid-template-columns: 20px 1fr 80px 120px; align-items: start; gap: 12px; padding: 10px 12px; background: var(--surface2); border-radius: 6px; border: 1px solid var(--border); }
+  .scenario-num { font-family: var(--mono); font-size: 10px; color: var(--text3); padding-top: 2px; }
+  .scenario-name { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+  .scenario-desc { font-size: 11px; color: var(--text2); line-height: 1.4; }
+  .scenario-weight { font-family: var(--mono); font-size: 11px; color: var(--accent); text-align: right; }
+  .scenario-files { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+  .file-pill { font-size: 9px; font-family: var(--mono); padding: 2px 6px; border-radius: 3px; }
+  .pill-nfs { background: #0a1e36; color: var(--accent); border: 1px solid #1a3a6a; }
+  .pill-switch { background: var(--purple-bg); color: var(--purple); border: 1px solid #2d1e54; }
+  .pill-cbs { background: var(--amber-bg); color: var(--amber); border: 1px solid #4a3a10; }
+
+  /* ── FORM ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-label { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text2); }
+  .form-input { background: var(--bg); border: 1px solid var(--border2); border-radius: 6px; padding: 8px 12px; color: var(--text); font-family: var(--mono); font-size: 13px; outline: none; transition: border 0.15s; }
+  .form-input:focus { border-color: var(--accent); }
+  .form-hint { font-size: 10px; color: var(--text3); }
+  .volume-display { font-family: var(--mono); font-size: 22px; color: var(--accent); margin-bottom: 2px; }
+
+  /* ── BUTTONS ── */
+  .btn { padding: 9px 18px; border-radius: 6px; font-family: var(--sans); font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; display: inline-flex; align-items: center; gap: 7px; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: #6b9cf7; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border2); }
+  .btn-outline:hover { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
+  .btn-green { background: #063d22; color: var(--green); border: 1px solid #1a5c3a; }
+  .btn-green:hover { background: #0a5c30; }
+
+  /* ── RESULTS ── */
+  .result-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 16px; }
+  .result-card { background: var(--surface2); border-radius: 6px; padding: 14px 16px; border: 1px solid var(--border); }
+  .result-card-label { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+  .result-card-value { font-family: var(--mono); font-size: 20px; font-weight: 500; }
+  .label-nfs { color: var(--accent); }
+  .label-switch { color: var(--purple); }
+  .label-cbs { color: var(--amber); }
+
+  .scenario-result-grid { display: grid; gap: 6px; }
+  .scenario-result-row { display: grid; grid-template-columns: 1fr 80px 80px 80px 80px; align-items: center; gap: 8px; padding: 8px 12px; background: var(--surface2); border-radius: 4px; font-size: 12px; }
+  .scenario-result-name { color: var(--text); }
+  .scenario-result-count { font-family: var(--mono); font-size: 11px; text-align: right; }
+  .th-row { grid-template-columns: 1fr 80px 80px 80px 80px; padding: 6px 12px; }
+  .th-cell { font-size: 9px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); text-align: right; }
+  .th-cell:first-child { text-align: left; }
+
+  /* ── PREVIEW ── */
+  .preview-tabs { display: flex; gap: 2px; margin-bottom: 12px; }
+  .preview-tab { padding: 6px 14px; border-radius: 4px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); color: var(--text2); background: transparent; transition: all 0.15s; }
+  .preview-tab.active { background: var(--surface2); border-color: var(--border2); color: var(--text); }
+  .preview-tab:hover:not(.active) { color: var(--text); }
+  .preview-code { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; overflow-x: auto; }
+  .preview-code pre { font-family: var(--mono); font-size: 11px; color: var(--text2); line-height: 1.6; white-space: pre; }
+  .preview-code .line-num { color: var(--text3); margin-right: 12px; user-select: none; }
+
+  /* ── LOADING ── */
+  .spinner { width: 16px; height: 16px; border: 2px solid rgba(79,142,247,0.3); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── PLACEHOLDER SCREEN ── */
+  .placeholder-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 400px; text-align: center; gap: 12px; }
+  .placeholder-icon { font-size: 40px; opacity: 0.2; }
+  .placeholder-text { font-size: 16px; font-weight: 500; color: var(--text2); }
+  .placeholder-sub { font-size: 13px; color: var(--text3); max-width: 320px; line-height: 1.6; }
+
+  /* ── MISC ── */
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+  .tag { display: inline-block; font-size: 9px; font-family: var(--mono); padding: 2px 6px; border-radius: 3px; }
+  .tag-network { background: #0a1e36; color: var(--accent); border: 1px solid #1a3a6a; }
+  .tag-channel { background: var(--purple-bg); color: var(--purple); border: 1px solid #2d1e54; }
+  .tag-role { background: var(--amber-bg); color: var(--amber); border: 1px solid #4a3a10; }
+  .error-box { background: var(--red-bg); border: 1px solid #5c2020; border-radius: 6px; padding: 12px 16px; color: var(--red); font-size: 13px; margin-bottom: 16px; }
+  .success-banner { background: var(--green-bg); border: 1px solid #1a5c3a; border-radius: 6px; padding: 12px 16px; color: var(--green); font-size: 13px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+
+  .actions-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .mono { font-family: var(--mono); }
+  .hidden { display: none; }
+
+  /* ── IDFC / BANK-LEVEL ── */
+  .coverage-tabs { display: flex; gap: 3px; margin-bottom: 0; }
+  .coverage-tab { padding: 7px 16px; border-radius: 5px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); color: var(--text2); background: transparent; transition: all 0.15s; }
+  .coverage-tab.active { background: #1a2544; border-color: #2d4078; color: var(--text); }
+  .coverage-tab:hover:not(.active) { color: var(--text); border-color: var(--border2); }
+  .pill-epin { background: #0a1e36; color: var(--accent); border: 1px solid #1a3a6a; }
+  .pill-tlf  { background: var(--purple-bg); color: var(--purple); border: 1px solid #2d1e54; }
+  .pill-ptlf { background: #1a1030; color: #c084fc; border: 1px solid #3d1e6e; }
+  .pill-cbs2 { background: var(--amber-bg); color: var(--amber); border: 1px solid #4a3a10; }
+  .pill-ep747{ background: #0f1e0f; color: var(--green); border: 1px solid #1a4a1a; }
+  .sc-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .sc-table th { padding: 6px 8px; font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; border-bottom: 1px solid var(--border2); text-align: left; position: sticky; top: 0; background: var(--surface); }
+  .sc-table td { padding: 5px 8px; border-bottom: 0.5px solid var(--border); vertical-align: middle; }
+  .badge-atm  { font-size: 9px; padding: 2px 5px; border-radius: 3px; background: #0a1630; color: var(--accent); border: 1px solid #1a3a6a; font-family: var(--mono); }
+  .badge-pos  { font-size: 9px; padding: 2px 5px; border-radius: 3px; background: var(--purple-bg); color: var(--purple); border: 1px solid #2d1e54; font-family: var(--mono); }
+  .badge-mc   { font-size: 9px; padding: 2px 5px; border-radius: 3px; background: rgba(20,184,166,.1); color: #2dd4bf; border: 1px solid rgba(20,184,166,.3); font-family: var(--mono); }
+  .badge-dom  { font-size: 9px; padding: 2px 5px; border-radius: 3px; background: var(--amber-bg); color: var(--amber); border: 1px solid #4a3a10; font-family: var(--mono); }
+  .badge-int  { font-size: 9px; padding: 2px 5px; border-radius: 3px; background: var(--red-bg); color: var(--red); border: 1px solid #5c2020; font-family: var(--mono); }
+  .idfc-file-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 8px; }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">ReconGen</div>
+      <div class="logo-sub">Test Data Factory · v1.0</div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Use Cases</div>
+      <div id="uc-list"></div>
+    </div>
+
+    <div style="flex:1"></div>
+    <div style="padding: 14px 20px; border-top: 1px solid var(--border);">
+      <div style="font-size: 10px; color: var(--text3); line-height: 1.6;">
+        <span style="color: var(--green);">●</span> Active &nbsp;
+        <span style="color: var(--text3);">●</span> Phase 2+
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="topbar-title">Select a use case</div>
+        <div class="topbar-sub" id="topbar-sub">Choose a reconciliation scenario from the left panel</div>
+      </div>
+      <div id="topbar-status"></div>
+    </div>
+
+    <div class="content" id="main-content">
+      <div class="placeholder-screen">
+        <div class="placeholder-icon">⚡</div>
+        <div class="placeholder-text">Select a use case to begin</div>
+        <div class="placeholder-sub">Choose a reconciliation scenario from the left panel to configure and generate test data files.</div>
+      </div>
+    </div>
+  </main>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let allUseCases = [];
+let selectedUC = null;
+let lastResult = null;
+let activePreviewTab = 'cbs';
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+async function init() {
+  const res = await fetch('/api/use-cases');
+  allUseCases = await res.json();
+  renderSidebar();
+}
+
+// ─────────────────────────────────────────────
+// SIDEBAR
+// ─────────────────────────────────────────────
+function renderSidebar() {
+  const list = document.getElementById('uc-list');
+  list.innerHTML = '';
+  allUseCases.forEach(uc => {
+    const isActive = uc.status === 'active';
+    const el = document.createElement('div');
+    el.className = 'uc-item' + (isActive ? '' : ' disabled');
+    el.innerHTML = `
+      <div class="uc-dot ${isActive ? 'active-uc' : 'placeholder'}"></div>
+      <div class="uc-name">${uc.name}</div>
+      ${uc.network ? `<span class="uc-badge">${uc.network}</span>` : ''}
+    `;
+    if (isActive) {
+      el.onclick = () => selectUC(uc);
+    }
+    list.appendChild(el);
+  });
+}
+
+function selectUC(uc) {
+  selectedUC = uc;
+  lastResult = null;
+
+  document.querySelectorAll('.uc-item').forEach((el, i) => {
+    el.classList.toggle('active', allUseCases[i]?.id === uc.id);
+  });
+
+  document.getElementById('topbar-title').textContent = uc.name;
+  document.getElementById('topbar-sub').textContent = uc.description || '';
+  document.getElementById('topbar-status').innerHTML =
+    `<span class="status-chip status-active">● ACTIVE</span>`;
+
+  if (uc.id === 'idfc_visa_issuer') {
+    renderIDFCContent();
+  } else if (uc.id === 'idfc_nfs_acquirer') {
+    renderIDFCNFSContent();
+  } else if (uc.id === 'idfc_mc_issuer') {
+    renderIDFCMCContent();
+  } else if (uc.id === 'nfs_atm_acquirer') {
+    renderNFSATMContent();
+  } else {
+    renderMainContent();
+  }
+}
+
+// ─────────────────────────────────────────────
+// MAIN CONTENT
+// ─────────────────────────────────────────────
+function renderMainContent() {
+  const uc = selectedUC;
+  const mc = document.getElementById('main-content');
+
+  // Participant file cards
+  const fileCards = (uc.participant_files||[]).map(f => {
+    const clsMap = {nfs:'pill-nfs',switch_tlf:'pill-switch',cbs:'pill-cbs'};
+    const cls = clsMap[f.id] || 'pill-nfs';
+    return `<div style="background:var(--surface2);border-radius:6px;padding:14px;border:1px solid var(--border)">
+      <div style="margin-bottom:8px"><span class="tag ${cls}" style="font-size:10px">${f.id.toUpperCase()}</span></div>
+      <div style="font-size:13px;font-weight:500;margin-bottom:4px">${f.name}</div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.5">${f.description}</div>
+    </div>`;
+  }).join('');
+
+  mc.innerHTML = `
+    <!-- PARTICIPANT FILES -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Participant Files</div>
+        <div style="margin-left:auto;display:flex;gap:6px">
+          <span class="tag tag-network">${uc.network||'NFS'}</span>
+          <span class="tag tag-channel">${uc.channel||'ATM'}</span>
+          <span class="tag tag-role">Bank as ${uc.bank_role||'issuer'}</span>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">${fileCards}</div>
+      </div>
+    </div>
+
+    <!-- GENERATE FORM -->
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">Generate Test Files</div></div>
+      <div class="panel-body">
+        <div id="generate-error" class="error-box hidden"></div>
+        <div class="form-grid" style="margin-bottom:18px">
+          <div class="form-group">
+            <div class="form-label">Transaction Date</div>
+            <input class="form-input" type="date" id="tran-date" value="${todayStr()}">
+          </div>
+          <div class="form-group">
+            <div class="form-label">Number of transactions</div>
+            <input class="form-input" type="number" id="volume" value="500" min="70" max="50000"
+              oninput="updateOkNote()">
+            <div class="form-hint" id="vol-hint">Min 70 (1 per case + 6 guaranteed 1|1|1 mismatch variants).</div>
+          </div>
+          <div class="form-group">
+            <div class="form-label">Reconciled % target</div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:2px">
+              <input type="range" id="ok-pct" min="0" max="100" value="99" step="1"
+                style="flex:1;accent-color:var(--accent)" oninput="updateOkNote()">
+              <span id="ok-pct-display" style="font-family:var(--mono);font-size:16px;color:var(--accent);min-width:42px">99%</span>
+            </div>
+            <div class="form-hint" id="ok-pct-note">At 500 records: ~90% achievable (48 exception cases fixed)</div>
+          </div>
+        </div>
+        <div class="actions-row">
+          <button class="btn btn-primary" id="generate-btn"
+            onclick="${uc.network === 'VISA' ? 'runVisaMatrixFromUC()' : 'runMatrixFromUC()'}">
+            <span>Generate Files</span>
+          </button>
+          <span style="font-size:11px;color:var(--text3)">3 files + manifest, all 64 cases covered</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- VALUE LEGEND -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">${uc.network === 'VISA' ? '64-Case Reconciliation Matrix (VISA)' : '64-Case Reconciliation Matrix'}</div>
+        <div style="margin-left:auto;font-size:11px;color:var(--text3)">16 OK · 48 exceptions · every case guaranteed ≥1 row</div>
+      </div>
+      <div class="panel-body" style="padding:12px 0">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 18px 14px">
+          ${(uc.network === 'VISA'
+            ? [['VISA TC','VISA POS/Cash forward (TC05/07)','VISA reversal (TC25/27)','forward + reversal in file'],
+               ['Switch','auth approved/forwarded','reversal forwarded','original + rev both present'],
+               ['CBS','customer debited','customer credited (refund)','debit + credit net zero']]
+            : [['NFS','bank debited by NFS','NFS credits bank (reversal)','original + reversal in file'],
+               ['Switch','txn approved/forwarded','reversal forwarded','original + rev both present'],
+               ['CBS','customer debited','customer credited (refund)','debit + credit net zero']]
+          ).map(([file,p1,m1,z1])=>`
+          <div style="background:var(--surface2);border-radius:6px;padding:10px 12px;border:1px solid var(--border)">
+            <div style="font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${file}</div>
+            ${[[1,p1],[-1,m1],[0,z1],[null,'no entry in file']].map(([v,desc])=>`
+            <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;font-size:11px;color:var(--text2)">${valChip(v)} ${desc}</div>`).join('')}
+          </div>`).join('')}
+        </div>
+        <div style="overflow-x:auto;max-height:350px;overflow-y:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:11px">
+            <thead style="position:sticky;top:0;background:var(--surface)">
+              <tr>
+                <th style="padding:7px 10px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase;border-bottom:1px solid var(--border2)">#</th>
+                <th style="padding:7px 8px;text-align:center;font-size:10px;color:var(--amber);text-transform:uppercase;border-bottom:1px solid var(--border2)">${uc.network === 'VISA' ? 'VISA TC' : 'NFS'}</th>
+                <th style="padding:7px 8px;text-align:center;font-size:10px;color:var(--purple);text-transform:uppercase;border-bottom:1px solid var(--border2)">Switch</th>
+                <th style="padding:7px 8px;text-align:center;font-size:10px;color:var(--accent);text-transform:uppercase;border-bottom:1px solid var(--border2)">CBS</th>
+                <th style="padding:7px 10px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase;border-bottom:1px solid var(--border2)">Action</th>
+                <th style="padding:7px 8px;border-bottom:1px solid var(--border2)"></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${CASES.map(c => {
+                const [cid,nv,sv,cv,action,isOk] = c;
+                const badge = isOk
+                  ? `<span style="font-size:9px;padding:2px 5px;border-radius:3px;background:var(--green-bg);color:var(--green);border:1px solid #1a5c3a">OK</span>`
+                  : `<span style="font-size:9px;padding:2px 5px;border-radius:3px;background:var(--surface2);color:var(--text3);border:1px solid var(--border)">EXCEPTION</span>`;
+                return `<tr style="border-bottom:0.5px solid var(--border)">
+                  <td style="padding:5px 10px;font-family:var(--mono);font-size:10px;color:var(--text3)">${cid}</td>
+                  <td style="padding:5px 8px;text-align:center">${valChip(nv)}</td>
+                  <td style="padding:5px 8px;text-align:center">${valChip(sv)}</td>
+                  <td style="padding:5px 8px;text-align:center">${valChip(cv)}</td>
+                  <td style="padding:5px 10px;color:var(--text2)">${action}</td>
+                  <td style="padding:5px 8px;text-align:right">${badge}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="results-section" class="hidden">
+      <div id="success-banner" class="success-banner">
+        <span id="success-text">✓ Files generated</span>
+        <button class="btn btn-green" id="download-btn">⬇ Download .zip</button>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">Coverage</div></div>
+        <div class="panel-body">
+          <div class="result-grid" id="result-counts" style="margin-bottom:16px"></div>
+          <div id="case-dist-table" style="overflow-x:auto;max-height:320px;overflow-y:auto"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">File Preview (first 10 rows)</div>
+          <div class="preview-tabs" style="margin-left:auto">
+            <button class="preview-tab active" id="tab-cbs" onclick="switchPreview('cbs')">CBS</button>
+            <button class="preview-tab" id="tab-nfs" onclick="switchPreview(selectedUC?.network==='VISA'?'visa_tc':'nfs')">${uc.network === 'VISA' ? 'VISA TC' : 'NFS'}</button>
+            <button class="preview-tab" id="tab-switch_tlf" onclick="switchPreview('switch_tlf')">Switch TLF</button>
+          </div>
+        </div>
+        <div class="panel-body" style="padding:12px 14px">
+          <div class="preview-code" id="preview-area">
+            <pre style="color:var(--text3);font-size:11px">Click a tab to preview</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  updateOkNote();
+}
+
+function updateOkNote() {
+  const vol = parseInt(document.getElementById('volume')?.value || 500);
+  const pct = parseInt(document.getElementById('ok-pct')?.value || 99);
+  // 48 non-OK cases + 6 guaranteed 1|1|1 mismatch variants = 54 fixed non-OK floor
+  const maxOk = Math.round((vol - 54) / vol * 100);
+  const achievable = Math.min(pct, Math.max(0, maxOk));
+  if (document.getElementById('ok-pct-display'))
+    document.getElementById('ok-pct-display').textContent = pct + '%';
+  if (document.getElementById('ok-pct-note'))
+    document.getElementById('ok-pct-note').textContent =
+      `At ${vol} records: ~${achievable}% achievable (54 fixed exceptions: 48 non-OK cases + 6 mismatch 1|1|1)`;
+}
+
+async function runMatrixFromUC() {
+  const btn = document.getElementById('generate-btn');
+  const errBox = document.getElementById('generate-error');
+  errBox.classList.add('hidden');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div><span>Generating…</span>';
+
+  const volume   = parseInt(document.getElementById('volume').value);
+  const okPct    = parseFloat(document.getElementById('ok-pct').value);
+  const tranDate = document.getElementById('tran-date').value;
+
+  try {
+    const res = await fetch('/api/generate-matrix', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ volume, ok_pct: okPct, tran_date: tranDate }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'Generation failed');
+    lastResult = data;
+    renderUCResults(data);
+  } catch(e) {
+    errBox.textContent = '✗ ' + e.message;
+    errBox.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>Generate Files</span>';
+  }
+}
+
+async function runVisaMatrixFromUC() {
+  const btn = document.getElementById('generate-btn');
+  const errBox = document.getElementById('generate-error');
+  errBox.classList.add('hidden');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div><span>Generating…</span>';
+
+  const volume   = parseInt(document.getElementById('volume').value);
+  const okPct    = parseFloat(document.getElementById('ok-pct').value);
+  const tranDate = document.getElementById('tran-date').value;
+
+  try {
+    const res = await fetch('/api/generate-visa-matrix', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ volume, ok_pct: okPct, tran_date: tranDate }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'Generation failed');
+    lastResult = data;
+    renderUCResults(data);
+  } catch(e) {
+    errBox.textContent = '✗ ' + e.message;
+    errBox.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>Generate Files</span>';
+  }
+}
+
+function renderUCResults(data) {
+  const isVisa = selectedUC && selectedUC.network === 'VISA';
+  document.getElementById('results-section').classList.remove('hidden');
+  const total = data.ok_groups + data.non_ok_groups;
+  document.getElementById('success-text').textContent =
+    `✓ ${total} transactions generated — ${data.ok_pct_actual}% reconciled`;
+
+  // Download button routes to correct endpoint
+  document.getElementById('download-btn').onclick = () =>
+    window.location.href = (isVisa ? '/api/download-visa-matrix/' : '/api/download-matrix/') + data.run_id;
+
+  const rc = data.row_counts || {};
+  const s  = data.settlement || {};
+  const m111 = data.mismatch_111_groups || 0;
+
+  // Choose the first-file label based on network
+  const file1Label = isVisa ? 'VISA TC groups' : 'NFS rows';
+  const file1Val   = isVisa ? (rc.visa_tc !== undefined ? Math.floor((rc.visa_tc||0)/4) : rc.nfs||0) : (rc.nfs||0);
+
+  document.getElementById('result-counts').innerHTML = `
+    <div class="result-card"><div class="result-card-label" style="color:var(--green)">Groups</div><div class="result-card-value" style="color:var(--green)">${total}</div><div style="font-size:10px;color:var(--text3);margin-top:4px">${data.ok_pct_actual}% reconciled</div></div>
+    <div class="result-card"><div class="result-card-label" style="color:var(--red)">1|1|1 Mismatch</div><div class="result-card-value" style="color:var(--red)">${m111}</div><div style="font-size:10px;color:var(--text3);margin-top:4px">amount/date differ</div></div>
+    <div class="result-card"><div class="result-card-label" style="color:var(--amber)">CBS rows</div><div class="result-card-value" style="color:var(--amber)">${rc.cbs||0}</div></div>
+    <div class="result-card"><div class="result-card-label" style="color:var(--accent)">${file1Label}</div><div class="result-card-value" style="color:var(--accent)">${file1Val}</div></div>
+    <div class="result-card"><div class="result-card-label" style="color:var(--purple)">Switch rows</div><div class="result-card-value" style="color:var(--purple)">${rc.switch_tlf||0}</div></div>
+  `;
+
+  // Settlement summary card
+  if (s && s.final_settlement !== undefined) {
+    const fmt = v => '₹' + Number(v).toLocaleString('en-IN', {minimumFractionDigits:2,maximumFractionDigits:2});
+    let settlHtml;
+    if (isVisa) {
+      settlHtml = `
+        <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:14px 18px;margin-top:4px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div>
+              <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);margin-bottom:2px">VISA VSS-110 Settlement Report</div>
+              <div style="font-size:11px;color:var(--text3)">Settlement Summary · ${s.settlement_date||''}</div>
+            </div>
+            <span style="font-size:10px;padding:3px 8px;border-radius:4px;background:var(--green-bg);color:var(--green);border:1px solid #1a5c3a">TXT</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">
+            <div style="background:var(--surface);border-radius:6px;padding:8px 10px;border:1px solid var(--border)">
+              <div style="font-size:10px;color:var(--text3);margin-bottom:2px">POS Approved</div>
+              <div style="font-family:var(--mono);font-size:13px">${s.pos_approved||0}</div>
+            </div>
+            <div style="background:var(--surface);border-radius:6px;padding:8px 10px;border:1px solid var(--border)">
+              <div style="font-size:10px;color:var(--text3);margin-bottom:2px">POS Volume</div>
+              <div style="font-family:var(--mono);font-size:13px">${fmt(s.pos_amount||0)}</div>
+            </div>
+            <div style="background:var(--surface);border-radius:6px;padding:8px 10px;border:1px solid var(--border)">
+              <div style="font-size:10px;color:var(--text3);margin-bottom:2px">Total Debit (Bank→VISA)</div>
+              <div style="font-family:var(--mono);font-size:13px;color:#f87171">${fmt(s.total_debit||0)}</div>
+            </div>
+            <div style="background:var(--surface);border-radius:6px;padding:8px 10px;border:1px solid #1a5c3a">
+              <div style="font-size:10px;color:var(--text3);margin-bottom:2px">Net Settlement</div>
+              <div style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--green)">${fmt(s.final_settlement||0)}</div>
+            </div>
+          </div>
+          <div style="font-size:10px;color:var(--text3)">
+            VSS-110 settlement report included in the .zip download.
+          </div>
+        </div>`;
+    } else {
+      settlHtml = `
+        <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:14px 18px;margin-top:4px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div>
+              <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);margin-bottom:2px">NFS Settlement File</div>
+              <div style="font-size:11px;color:var(--text3)">Daily Settlement Statement · ${s.settlement_date||''}</div>
+            </div>
+            <span style="font-size:10px;padding:3px 8px;border-radius:4px;background:var(--green-bg);color:var(--green);border:1px solid #1a5c3a">XLSX</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">
+            <div style="background:var(--surface);border-radius:6px;padding:8px 10px;border:1px solid var(--border)">
+              <div style="font-size:10px;color:var(--text3);margin-bottom:2px">WDL Approved</div>
+              <div style="font-family:var(--mono);font-size:13px">${s.issuer_wdl_approved||0}</div>
+            </div>
+            <div style="background:var(--surface);border-radius:6px;padding:8px 10px;border:1px solid var(--border)">
+              <div style="font-size:10px;color:var(--text3);margin-bottom:2px">WDL Amount</div>
+              <div style="font-family:var(--mono);font-size:13px">${fmt(s.issuer_wdl_amount||0)}</div>
+            </div>
+            <div style="background:var(--surface);border-radius:6px;padding:8px 10px;border:1px solid var(--border)">
+              <div style="font-size:10px;color:var(--text3);margin-bottom:2px">Total Debit (Bank→NFS)</div>
+              <div style="font-family:var(--mono);font-size:13px;color:#f87171">${fmt(s.total_debit||0)}</div>
+            </div>
+            <div style="background:var(--surface);border-radius:6px;padding:8px 10px;border:1px solid #1a5c3a">
+              <div style="font-size:10px;color:var(--text3);margin-bottom:2px">Final Settlement</div>
+              <div style="font-family:var(--mono);font-size:14px;font-weight:600;color:var(--green)">${fmt(s.final_settlement||0)}</div>
+            </div>
+          </div>
+          <div style="font-size:10px;color:var(--text3)">
+            Settlement file included in the .zip download. Format matches NFS NTSLIDF daily statement.
+          </div>
+        </div>`;
+    }
+    document.getElementById('result-counts').insertAdjacentHTML('afterend', settlHtml);
+  }
+
+  const dist = data.case_distribution || {};
+  const colHeader = isVisa ? 'VISA TC' : 'NFS';
+  let t = '<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="border-bottom:1px solid var(--border2)">'
+    + '<th style="padding:5px 8px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase">#</th>'
+    + `<th style="padding:5px 6px;text-align:center;font-size:10px;color:var(--amber);text-transform:uppercase">${colHeader}</th>`
+    + '<th style="padding:5px 6px;text-align:center;font-size:10px;color:var(--purple);text-transform:uppercase">Switch</th>'
+    + '<th style="padding:5px 6px;text-align:center;font-size:10px;color:var(--accent);text-transform:uppercase">CBS</th>'
+    + '<th style="padding:5px 8px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase">Action</th>'
+    + '<th style="padding:5px 8px;text-align:right;font-size:10px;color:var(--text3);text-transform:uppercase">Count</th>'
+    + '</tr></thead><tbody>';
+  Object.values(dist).forEach(c => {
+    const ok = c.is_ok ? `<span style="color:var(--green);font-size:10px">✓ </span>` : '';
+    t += `<tr style="border-bottom:0.5px solid var(--border)">
+      <td style="padding:5px 8px;font-family:var(--mono);color:var(--text3)">${ok}${c.case_id}</td>
+      <td style="padding:5px 6px;text-align:center">${valChip(isVisa ? c.visa_tc : c.nfs)}</td>
+      <td style="padding:5px 6px;text-align:center">${valChip(c.switch)}</td>
+      <td style="padding:5px 6px;text-align:center">${valChip(c.cbs)}</td>
+      <td style="padding:5px 8px;color:var(--text2)">${c.action}</td>
+      <td style="padding:5px 8px;text-align:right;font-family:var(--mono);color:var(--text)">${c.count}</td>
+    </tr>`;
+  });
+  t += '</tbody></table>';
+  document.getElementById('case-dist-table').innerHTML = t;
+  document.getElementById('results-section').scrollIntoView({ behavior: 'smooth' });
+
+  // Update preview tabs for VISA
+  if (isVisa) {
+    const tabNfs = document.getElementById('tab-nfs');
+    if (tabNfs) tabNfs.textContent = 'VISA TC';
+    switchPreview('cbs');
+  } else {
+    switchPreview('cbs');
+  }
+}
+
+function renderParticipantCards(files) {
+  const colors = { nfs: ['pill-nfs', 'label-nfs'], switch_tlf: ['pill-switch', 'label-switch'], cbs: ['pill-cbs', 'label-cbs'] };
+  const icons = { nfs: '🔀', switch_tlf: '⚙', cbs: '🏦' };
+  if (!files || files.length === 0) return '<div style="color:var(--text3)">No participant files defined</div>';
+  return files.map(f => {
+    const c = colors[f.id] || ['pill-nfs', 'label-nfs'];
+    return `
+      <div style="background:var(--surface2); border-radius:6px; padding:14px; border:1px solid var(--border);">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+          <span class="tag ${c[0]}" style="font-size:10px;">${f.id.toUpperCase()}</span>
+        </div>
+        <div style="font-size:13px; font-weight:500; margin-bottom:4px;">${f.name}</div>
+        <div style="font-size:11px; color:var(--text2); line-height:1.5;">${f.description}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderScenarioRow(s, i) {
+  const files = s.files_present || [];
+  const fileSet = [...new Set(files)];
+  const pills = fileSet.map(f => {
+    const cls = f === 'nfs' ? 'pill-nfs' : f === 'switch_tlf' ? 'pill-switch' : 'pill-cbs';
+    return `<span class="file-pill ${cls}">${f.replace('switch_tlf','TLF').toUpperCase()}</span>`;
+  }).join('');
+  return `
+    <div class="scenario-row">
+      <div class="scenario-num">${String(i+1).padStart(2,'0')}</div>
+      <div>
+        <div class="scenario-name">${s.name}</div>
+        <div class="scenario-desc">${s.description}</div>
+      </div>
+      <div class="scenario-weight">~${s.weight}%</div>
+      <div class="scenario-files">${pills}</div>
+    </div>`;
+}
+
+function updateVolDisplay() {
+  const v = parseInt(document.getElementById('volume').value) || 50;
+  document.getElementById('vol-display').textContent = v;
+  const scenarios = selectedUC?.scenarios?.length || 14;
+  const floor = scenarios;
+  const extra = Math.max(0, v - floor);
+  document.getElementById('vol-breakdown').textContent =
+    `${floor} reserved (1 per scenario) + ${extra} weighted fill`;
+}
+
+function todayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+
+// ─────────────────────────────────────────────
+// GENERATE
+// ─────────────────────────────────────────────
+async function runGenerate() {
+  const btn = document.getElementById('generate-btn');
+  const errBox = document.getElementById('generate-error');
+  errBox.classList.add('hidden');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div><span>Generating…</span>';
+
+  const volume = parseInt(document.getElementById('volume').value);
+  const tranDate = document.getElementById('tran-date').value;
+
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ use_case_id: selectedUC.id, volume, tran_date: tranDate }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'Generation failed');
+    lastResult = data;
+    renderResults(data);
+  } catch (e) {
+    errBox.textContent = '✗ ' + e.message;
+    errBox.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>Generate Files</span>';
+  }
+}
+
+function renderResults(data) {
+  document.getElementById('results-section').classList.remove('hidden');
+
+  // File counts
+  const counts = document.getElementById('result-counts');
+  const files = data.files || {};
+  counts.innerHTML = `
+    <div class="result-card">
+      <div class="result-card-label label-cbs">CBS (EX3198)</div>
+      <div class="result-card-value" style="color:var(--amber)">${files.cbs?.rows || 0}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px;">rows</div>
+    </div>
+    <div class="result-card">
+      <div class="result-card-label label-nfs">NFS Interchange</div>
+      <div class="result-card-value" style="color:var(--accent)">${files.nfs?.rows || 0}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px;">rows</div>
+    </div>
+    <div class="result-card">
+      <div class="result-card-label label-switch">Switch TLF</div>
+      <div class="result-card-value" style="color:var(--purple)">${files.switch_tlf?.rows || 0}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px;">rows</div>
+    </div>
+  `;
+
+  // Scenario coverage
+  const coverage = document.getElementById('scenario-coverage');
+  const summary = data.scenario_summary || {};
+  let html = `
+    <div class="scenario-result-grid">
+      <div class="scenario-result-row th-row">
+        <div class="th-cell">Scenario</div>
+        <div class="th-cell">Total</div>
+        <div class="th-cell" style="color:var(--amber)">CBS</div>
+        <div class="th-cell" style="color:var(--accent)">NFS</div>
+        <div class="th-cell" style="color:var(--purple)">TLF</div>
+      </div>`;
+  Object.entries(summary).forEach(([id, s]) => {
+    html += `<div class="scenario-result-row">
+      <div class="scenario-result-name">${s.name}</div>
+      <div class="scenario-result-count mono">${s.total_rows}</div>
+      <div class="scenario-result-count mono" style="color:var(--amber)">${s.files.cbs || 0}</div>
+      <div class="scenario-result-count mono" style="color:var(--accent)">${s.files.nfs || 0}</div>
+      <div class="scenario-result-count mono" style="color:var(--purple)">${s.files.switch_tlf || 0}</div>
+    </div>`;
+  });
+  html += '</div>';
+  coverage.innerHTML = html;
+
+  // Download button
+  document.getElementById('download-btn').onclick = () => {
+    window.location.href = `/api/download/${data.run_id}`;
+  };
+
+  // Auto-load CBS preview
+  switchPreview('cbs');
+
+  // Scroll to results
+  document.getElementById('results-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ─────────────────────────────────────────────
+// PREVIEW
+// ─────────────────────────────────────────────
+async function switchPreview(fileType) {
+  activePreviewTab = fileType;
+  // For VISA runs, 'nfs' tab actually shows 'visa_tc'
+  const isVisa = selectedUC && selectedUC.network === 'VISA';
+  const resolvedType = (isVisa && fileType === 'nfs') ? 'visa_tc' : fileType;
+  ['cbs', 'nfs', 'switch_tlf'].forEach(t => {
+    document.getElementById(`tab-${t}`)?.classList.toggle('active', t === fileType);
+  });
+  const fetchType = resolvedType;
+
+  if (!lastResult) return;
+  const area = document.getElementById('preview-area');
+  area.innerHTML = '<pre style="color:var(--text3)">Loading…</pre>';
+
+  try {
+    const res = await fetch(`/api/preview/${lastResult.run_id}/${fetchType}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    const lines = data.preview;
+    const html = lines.map((l, i) => {
+      const escaped = l.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return `<span class="line-num">${String(i+1).padStart(3,' ')}</span>${escaped}`;
+    }).join('\n');
+    area.innerHTML = `<pre>${html}</pre>
+      <div style="font-size:10px;color:var(--text3);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+        Showing ${lines.length} of ${data.total_lines} rows · ${data.file}
+      </div>`;
+  } catch (e) {
+    area.innerHTML = `<pre style="color:var(--red)">Error: ${e.message}</pre>`;
+  }
+}
+
+init();
+
+// ─────────────────────────────────────────────
+// NFS ATM ACQUIRER — HYOSUNG EJ VIEW
+// ─────────────────────────────────────────────
+const EJ_BANKS = [
+  { id: 'sbi', name: 'SBI — State Bank of India', vendors: ['hyosung'] }
+];
+const EJ_VENDORS = {
+  hyosung: { name: 'Hyosung', types: [
+    { id: 'U1', label: 'U1 — Withdrawal only' },
+    { id: 'S5', label: 'S5 — Recycler (Deposit + Withdrawal)' }
+  ]}
+};
+const EJ_CASES = [
+  { id: 'sync',                 label: 'Sync with other files',                desc: 'Normal successful transactions (default baseline)',          default: true,  s5_only: false },
+  { id: 'withdrawal_success',   label: 'Successful withdrawal',                desc: 'Standard cash withdrawal transaction',                      default: true,  s5_only: false },
+  { id: 'balance_inquiry',      label: 'Balance inquiry',                      desc: 'No cash dispensed — balance check only',                    default: true,  s5_only: false },
+  { id: 'declined_insufficient',label: 'Declined — insufficient funds',        desc: 'Host declines due to insufficient balance',                 default: false, s5_only: false },
+  { id: 'declined_unauthorized',label: 'Declined — unauthorized card',         desc: 'Card rejected (e.g., response code 050)',                   default: false, s5_only: false },
+  { id: 'host_timeout',         label: 'Host timeout / no response',           desc: 'ATM timed out waiting for host response',                   default: false, s5_only: false },
+  { id: 'cash_not_taken',       label: 'Cash not taken (retracted)',           desc: 'Customer did not take cash; ATM retracted it',              default: false, s5_only: false },
+  { id: 'notes_in_reject',      label: 'Notes in reject counter',              desc: 'Some notes moved to reject cassette during dispense',       default: false, s5_only: false },
+  { id: 'partial_ej',           label: 'Partial / split transaction',          desc: 'Transaction starts but ends in next EJ file',               default: false, s5_only: false },
+  { id: 'admin_cassette',       label: 'Admin transaction (cassette replenishment)', desc: 'Machine subtotal / cassette refill by engineer',      default: false, s5_only: false },
+  { id: 'unknown_notes',        label: 'Unknown denomination notes',           desc: 'UNKNOWN denom appears in cassette counters',                default: false, s5_only: false },
+  { id: 'deposit_card',         label: 'Card cash deposit',                   desc: 'Customer deposits cash using card',                         default: false, s5_only: true  },
+  { id: 'deposit_cardless',     label: 'Cardless deposit',                    desc: 'UPI-based cardless cash deposit',                           default: false, s5_only: true  },
+  { id: 'deposit_rejected',     label: 'Deposit with rejected notes',         desc: 'Some notes rejected during deposit',                        default: false, s5_only: true  },
+  { id: 'deposit_retracted',    label: 'Deposit retracted',                   desc: 'Deposit cash moved to retract cassette',                    default: false, s5_only: true  },
+  { id: 'deposit_jam',          label: 'Deposit with cash JAM error',         desc: 'CASH_JAM_OCCURED during deposit transaction',               default: false, s5_only: true  },
+];
+
+let ejSelectedCases = new Set();
+let ejLastResult = null;
+
+function renderNFSATMContent() {
+  // Init selected cases from defaults
+  ejSelectedCases.clear();
+  EJ_CASES.filter(c => c.default).forEach(c => ejSelectedCases.add(c.id));
+
+  const mc = document.getElementById('main-content');
+  mc.innerHTML = `
+    <!-- OVERVIEW PANEL -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">EJ File Generator</div>
+        <div style="margin-left:auto;display:flex;gap:6px">
+          <span class="tag tag-network">NFS</span>
+          <span class="tag tag-channel">ATM</span>
+          <span class="tag tag-role">Bank as Acquirer</span>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div style="font-size:13px;color:var(--text2);line-height:1.6;max-width:640px">
+          Generate a Hyosung Electronic Journal (EJ) file for SBI ATMs.
+          The EJ captures every event at the ATM — withdrawals, deposits, admin tallies, errors —
+          as a sequential log used for ATM reconciliation with CBS and NFS records.
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIGURATION PANEL -->
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">Configuration</div></div>
+      <div class="panel-body">
+        <div id="ej-error" class="error-box hidden"></div>
+        <div class="form-grid" style="margin-bottom:18px;grid-template-columns:1fr 1fr 1fr 1fr">
+
+          <!-- Bank -->
+          <div class="form-group">
+            <div class="form-label">Bank</div>
+            <select class="form-input" id="ej-bank" onchange="ejBankChanged()">
+              ${EJ_BANKS.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}
+            </select>
+          </div>
+
+          <!-- Vendor (read-only) -->
+          <div class="form-group">
+            <div class="form-label">EJ Vendor</div>
+            <div id="ej-vendor-display" style="padding:8px 12px;border-radius:6px;border:1px solid var(--border2);background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--accent)">Hyosung</div>
+          </div>
+
+          <!-- ATM Type -->
+          <div class="form-group">
+            <div class="form-label">ATM Type</div>
+            <select class="form-input" id="ej-atm-type" onchange="ejAtmTypeChanged()">
+              <option value="U1">U1 — Withdrawal only</option>
+              <option value="S5">S5 — Recycler (Deposit + Withdrawal)</option>
+            </select>
+          </div>
+
+          <!-- Transaction Date -->
+          <div class="form-group">
+            <div class="form-label">Transaction Date</div>
+            <input class="form-input" type="date" id="ej-tran-date" value="${todayStr()}">
+          </div>
+        </div>
+
+        <div class="form-grid" style="margin-bottom:22px;grid-template-columns:1fr 3fr">
+          <div class="form-group">
+            <div class="form-label">Number of Transactions</div>
+            <input class="form-input" type="number" id="ej-num-txns" value="50" min="5" max="500">
+            <div class="form-hint">5 – 500 customer transactions (excl. admin)</div>
+          </div>
+        </div>
+
+        <!-- EJ Scenarios checklist -->
+        <div style="margin-bottom:18px">
+          <div style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--text2);margin-bottom:10px">
+            EJ Scenarios
+            <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3);margin-left:8px">Select the transaction types to include in the EJ file</span>
+          </div>
+
+          <!-- Common Cases -->
+          <div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Common Cases</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px" id="ej-common-cases">
+            ${EJ_CASES.filter(c => !c.s5_only).map(c => ejCaseCheckbox(c, true)).join('')}
+          </div>
+
+          <!-- S5 Recycler Cases -->
+          <div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">
+            S5 Recycler Cases (Deposit)
+            <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3);margin-left:6px" id="ej-s5-note">— select S5 ATM type to enable</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px" id="ej-s5-cases">
+            ${EJ_CASES.filter(c => c.s5_only).map(c => ejCaseCheckbox(c, false)).join('')}
+          </div>
+        </div>
+
+        <div class="actions-row">
+          <button class="btn btn-primary" id="ej-generate-btn" onclick="runGenerateEJ()">
+            <span>Generate EJ File</span>
+          </button>
+          <span style="font-size:11px;color:var(--text3)" id="ej-case-count">3 cases selected</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="ej-results" class="hidden">
+      <div id="ej-success-banner" class="success-banner">
+        <span id="ej-success-text">✓ EJ file generated</span>
+        <button class="btn btn-green" id="ej-download-btn">⬇ Download EJ File</button>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">Generation Summary</div></div>
+        <div class="panel-body">
+          <div id="ej-result-body"></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  ejUpdateCaseCount();
+  ejAtmTypeChanged(); // sync initial disabled state
+}
+
+function ejCaseCheckbox(c, enabled) {
+  const checked = ejSelectedCases.has(c.id) ? 'checked' : '';
+  const isS5 = c.s5_only;
+  return `
+    <div id="ej-case-${c.id}" style="background:var(--surface2);border-radius:6px;padding:10px 12px;border:1px solid var(--border);opacity:${enabled && !isS5 ? 1 : (isS5 ? 0.45 : 1)}">
+      <label style="display:flex;gap:8px;align-items:flex-start;cursor:${isS5 ? 'default' : 'pointer'}">
+        <input type="checkbox" id="ej-chk-${c.id}" ${checked}
+               ${isS5 ? 'disabled' : ''}
+               onchange="ejToggleCase('${c.id}', this.checked)"
+               style="margin-top:2px;accent-color:var(--accent);flex-shrink:0">
+        <div>
+          <div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:2px">
+            ${c.label}
+            ${c.s5_only ? '<span style="font-size:9px;font-family:var(--mono);padding:1px 5px;border-radius:3px;background:#0a1e36;color:var(--accent);border:1px solid #1a3a6a;margin-left:4px">S5</span>' : ''}
+          </div>
+          <div style="font-size:10px;color:var(--text2);line-height:1.4">${c.desc}</div>
+        </div>
+      </label>
+    </div>`;
+}
+
+function ejToggleCase(id, checked) {
+  if (checked) ejSelectedCases.add(id);
+  else ejSelectedCases.delete(id);
+  ejUpdateCaseCount();
+}
+
+function ejUpdateCaseCount() {
+  const n = ejSelectedCases.size;
+  const el = document.getElementById('ej-case-count');
+  if (el) el.textContent = `${n} case${n !== 1 ? 's' : ''} selected`;
+}
+
+function ejBankChanged() {
+  // Currently only SBI/Hyosung — vendor display is always Hyosung
+  const vendor = document.getElementById('ej-vendor-display');
+  if (vendor) vendor.textContent = 'Hyosung';
+}
+
+function ejAtmTypeChanged() {
+  const atmType = document.getElementById('ej-atm-type')?.value || 'U1';
+  const isS5 = atmType === 'S5';
+  const noteEl = document.getElementById('ej-s5-note');
+  if (noteEl) noteEl.textContent = isS5 ? '' : '— select S5 ATM type to enable';
+
+  EJ_CASES.filter(c => c.s5_only).forEach(c => {
+    const wrapper = document.getElementById(`ej-case-${c.id}`);
+    const chk = document.getElementById(`ej-chk-${c.id}`);
+    if (wrapper) wrapper.style.opacity = isS5 ? '1' : '0.45';
+    if (chk) {
+      chk.disabled = !isS5;
+      if (!isS5) {
+        chk.checked = false;
+        ejSelectedCases.delete(c.id);
+      }
+    }
+  });
+  ejUpdateCaseCount();
+}
+
+async function runGenerateEJ() {
+  const btn = document.getElementById('ej-generate-btn');
+  const errBox = document.getElementById('ej-error');
+  errBox.classList.add('hidden');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div><span>Generating…</span>';
+
+  const atm_type        = document.getElementById('ej-atm-type').value;
+  const tran_date       = document.getElementById('ej-tran-date').value;
+  const num_transactions = parseInt(document.getElementById('ej-num-txns').value);
+  const selected_cases  = [...ejSelectedCases];
+
+  try {
+    const res = await fetch('/api/generate-ej', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ atm_type, tran_date, num_transactions, selected_cases, bank_id: 'sbi' }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'Generation failed');
+    ejLastResult = data;
+    renderEJResults(data);
+  } catch(e) {
+    errBox.textContent = '✗ ' + e.message;
+    errBox.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>Generate EJ File</span>';
+  }
+}
+
+function renderEJResults(data) {
+  document.getElementById('ej-results').classList.remove('hidden');
+  const counts = data.counts || {};
+  const cases = data.cases_included || [];
+
+  document.getElementById('ej-success-text').textContent =
+    `✓ EJ file generated — ${counts.total || 0} transactions, ${cases.length} scenario type${cases.length !== 1 ? 's' : ''}`;
+
+  document.getElementById('ej-download-btn').onclick = () => {
+    window.location.href = `/api/download-ej/${data.run_id}`;
+  };
+
+  // Build summary
+  let html = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+      <div class="result-card">
+        <div class="result-card-label" style="color:var(--accent)">ATM ID</div>
+        <div style="font-family:var(--mono);font-size:14px;color:var(--text)">${data.atm_id || ''}</div>
+      </div>
+      <div class="result-card">
+        <div class="result-card-label" style="color:var(--green)">Location</div>
+        <div style="font-size:13px;color:var(--text)">${data.location || ''}</div>
+      </div>
+      <div class="result-card">
+        <div class="result-card-label" style="color:var(--amber)">File</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text);word-break:break-all">${data.file_name || ''}</div>
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);margin-bottom:10px">Transaction Breakdown</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">`;
+
+  const caseLabels = {};
+  EJ_CASES.forEach(c => { caseLabels[c.id] = c.label; });
+  caseLabels['sync'] = 'Sync / Normal Withdrawals';
+
+  const allCaseIds = ['sync', 'withdrawal_success', 'balance_inquiry',
+    'declined_insufficient', 'declined_unauthorized', 'host_timeout',
+    'cash_not_taken', 'notes_in_reject', 'partial_ej', 'admin_cassette',
+    'unknown_notes', 'deposit_card', 'deposit_cardless', 'deposit_rejected',
+    'deposit_retracted', 'deposit_jam'];
+
+  allCaseIds.forEach(id => {
+    const n = counts[id] || 0;
+    if (n === 0) return;
+    const color = id.startsWith('deposit') ? 'var(--purple)' :
+                  id.startsWith('declined') || id === 'host_timeout' ? 'var(--red)' :
+                  id === 'admin_cassette' ? 'var(--amber)' :
+                  id === 'partial_ej' || id === 'cash_not_taken' || id === 'notes_in_reject' ? 'var(--amber)' :
+                  'var(--green)';
+    html += `<div class="result-card">
+      <div class="result-card-label" style="color:${color};font-size:9px">${(caseLabels[id] || id).toUpperCase()}</div>
+      <div class="result-card-value" style="color:${color};font-size:18px">${n}</div>
+    </div>`;
+  });
+
+  html += '</div>';
+  document.getElementById('ej-result-body').innerHTML = html;
+  document.getElementById('ej-results').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ─────────────────────────────────────────────
+// IDFC VISA VIEW
+// ─────────────────────────────────────────────
+let idfcScenarios = null;
+let idfcLastResult = null;
+let selectedScenarioIds = new Set();
+let scenarioSelectorOpen = false;
+let customScenarios = [];   // [{tran_type,tran_category,cbs_fwd,cbs_rev,switch_fwd,switch_rev,epin_fwd,epin_rev}]
+
+const IDFC_FILE_DEFS = [
+  { id: 'epin_dom',  label: 'EPIN DOM',  cls: 'pill-epin', desc: 'VISA Clearing (Domestic)' },
+  { id: 'epin_int',  label: 'EPIN INT',  cls: 'pill-epin', desc: 'VISA Clearing (International)' },
+  { id: 'tlf',       label: 'TLF',       cls: 'pill-tlf',  desc: 'ATM Switch Log' },
+  { id: 'ptlf',      label: 'PTLF',      cls: 'pill-ptlf', desc: 'POS Switch Log' },
+  { id: 'cbsmcw',    label: 'CBSMCW',    cls: 'pill-cbs2', desc: 'CBS Card File' },
+  { id: 'fssgl',     label: 'FSSGL',     cls: 'pill-cbs2', desc: 'CBS GL File' },
+  { id: 'ep747_dom', label: 'EP747 DOM', cls: 'pill-ep747', desc: 'VSS Report (Domestic)' },
+  { id: 'ep747_int', label: 'EP747 INT', cls: 'pill-ep747', desc: 'VSS Report (International)' },
+];
+
+const IDFC_GROUP_NAMES = {
+  A: 'Perfect Match', B: 'Single Full Reversal Same Day', C: 'Reversal on Different Day',
+  D: 'Partial Reversal', E: 'Multiple Reversals', F: 'Installment / Split Billing',
+  G: 'Disputes / Chargeback', H: 'Fee Transactions', I: 'Amount Mismatches',
+  J: 'Date Mismatches', K: 'Duplicates & Double Debit', L: 'Missing Files',
+  M: 'Crossfire / Direction Mismatch', N: 'PNC Matrix',
+  O: 'Missing + Amount Mismatch', P: 'MC Reversal — Original Match',
+  CUSTOM: 'Custom Entries',
+};
+
+const IDFC_GROUP_COLORS = {
+  A: 'var(--green)',   B: 'var(--green)',   C: 'var(--purple)',
+  D: 'var(--purple)',  E: 'var(--amber)',   F: 'var(--amber)',
+  G: '#818cf8',        H: '#60a5fa',        I: 'var(--red)',
+  J: 'var(--purple)',  K: 'var(--red)',     L: 'var(--text2)',
+  M: '#f97316',        N: 'var(--text2)',   O: 'var(--red)',
+  P: '#60a5fa',        CUSTOM: '#818cf8',
+};
+
+const VISA_ISSUER_BANKS = [
+  { id: 'idfc', name: 'IDFC FIRST Bank' },
+];
+
+function initSelectedScenarios() {
+  if (!idfcScenarios) return;
+  selectedScenarioIds.clear();
+  for (const scs of Object.values(idfcScenarios.groups || {}))
+    for (const sc of scs) selectedScenarioIds.add(sc.id);
+}
+
+function isOkCustom(cs) {
+  if (cs.cbs_fwd === null || cs.switch_fwd === null || cs.epin_fwd === null) return false;
+  const cbsKey = `${cs.cbs_fwd}/${cs.cbs_rev||0}`;
+  const swKey  = `${cs.switch_fwd}/${cs.switch_rev||0}`;
+  const epKey  = `${cs.epin_fwd}/${cs.epin_rev||0}`;
+  return cbsKey === swKey && swKey === epKey && (cs.cbs_fwd + (cs.cbs_rev||0)) > 0;
+}
+
+function stateChipFR(fwd, rev) {
+  const base = 'font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:3px;border:1px solid;white-space:nowrap';
+  if (fwd === null)
+    return `<span style="${base} var(--border);color:var(--text3);background:var(--surface2)">—</span>`;
+  const f = fwd || 0, r = rev || 0;
+  if (f === 0 && r === 0)
+    return `<span style="${base} var(--border2);color:var(--text2);background:var(--surface2)">0</span>`;
+  const parts = [];
+  if (f > 0) parts.push(`+${f}F`);
+  if (r > 0) parts.push(`-${r}R`);
+  const label = parts.join(' ');
+  if (f > 0 && r === 0)
+    return `<span style="${base} #1a5c3a;color:var(--green);background:var(--green-bg)">${label}</span>`;
+  if (f === 0 && r > 0)
+    return `<span style="${base} #78350f;color:var(--amber);background:rgba(245,158,11,.1)">${label}</span>`;
+  return `<span style="${base} #3730a3;color:#a5b4fc;background:rgba(99,102,241,.1)">${label}</span>`;
+}
+
+function toggleFileNull(prefix) {
+  const btn    = document.getElementById(`cs-${prefix}-null`);
+  const fwdEl  = document.getElementById(`cs-${prefix}-fwd`);
+  const revEl  = document.getElementById(`cs-${prefix}-rev`);
+  if (!btn) return;
+  const nowNull = btn.dataset.active !== '1';
+  btn.dataset.active = nowNull ? '1' : '0';
+  btn.style.color       = nowNull ? 'var(--amber)' : 'var(--text3)';
+  btn.style.borderColor = nowNull ? 'var(--amber)' : 'var(--border2)';
+  btn.textContent = nowNull ? '∅ null' : 'null';
+  [fwdEl, revEl].forEach(el => { if (el) { el.disabled = nowNull; el.style.opacity = nowNull ? '0.35' : '1'; } });
+}
+
+function _readFileState(prefix) {
+  const btn = document.getElementById(`cs-${prefix}-null`);
+  if (btn && btn.dataset.active === '1') return { fwd: null, rev: null };
+  const fwd = Math.min(9, Math.max(0, parseInt(document.getElementById(`cs-${prefix}-fwd`)?.value || '1') || 0));
+  const rev = Math.min(9, Math.max(0, parseInt(document.getElementById(`cs-${prefix}-rev`)?.value || '0') || 0));
+  return { fwd, rev };
+}
+
+function addCustomScenario() {
+  if (customScenarios.length >= 100) return;
+  const wasEmpty = customScenarios.length === 0;
+  const cbs = _readFileState('cbs');
+  const sw  = _readFileState('sw');
+  const ep  = _readFileState('ep');
+  customScenarios.push({
+    tran_type:     document.getElementById('cs-tran-type')?.value || 'ATM',
+    tran_category: document.getElementById('cs-tran-cat')?.value || 'D',
+    cbs_fwd: cbs.fwd, cbs_rev: cbs.rev,
+    switch_fwd: sw.fwd, switch_rev: sw.rev,
+    epin_fwd: ep.fwd, epin_rev: ep.rev,
+  });
+  if (wasEmpty) selectAllScenarios(false);
+  renderCustomScenarioList();
+  updateIDFCOkNote();
+}
+
+function removeCustomScenario(idx) {
+  customScenarios.splice(idx, 1);
+  renderCustomScenarioList();
+  updateIDFCOkNote();
+}
+
+function clearAllCustomScenarios() {
+  customScenarios = [];
+  renderCustomScenarioList();
+  updateIDFCOkNote();
+}
+
+function renderCustomScenarioList() {
+  const listEl  = document.getElementById('custom-scenario-list');
+  const countEl = document.getElementById('custom-scenario-count');
+  if (!listEl) return;
+  const n    = customScenarios.length;
+  const okN  = customScenarios.filter(isOkCustom).length;
+  if (countEl) countEl.textContent = `${n} / 100 · ${okN} OK · ${n - okN} EXC`;
+
+  if (n === 0) {
+    listEl.innerHTML = `<div style="font-size:10px;color:var(--text3);font-style:italic;padding:4px 0">No entries yet — use the controls above to add scenarios.</div>`;
+    return;
+  }
+  let rows = '';
+  customScenarios.forEach((cs, i) => {
+    const ok   = isOkCustom(cs);
+    const typB = cs.tran_type === 'ATM'
+      ? `<span class="badge-atm">ATM</span>`
+      : cs.tran_type === 'MERCH_CR' ? `<span class="badge-mc">MC</span>`
+      : `<span class="badge-pos">POS</span>`;
+    const diB  = cs.tran_category === 'D'
+      ? `<span class="badge-dom">DOM</span>` : `<span class="badge-int">INT</span>`;
+    const stB  = ok
+      ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:var(--green-bg);color:var(--green);border:1px solid #1a5c3a">OK</span>`
+      : `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:var(--surface2);color:var(--text3);border:1px solid var(--border)">EXC</span>`;
+    rows += `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:3px 6px;font-family:var(--mono);font-size:10px;color:var(--text3)">${i+1}</td>
+      <td style="padding:3px 4px;text-align:center">${typB}</td>
+      <td style="padding:3px 4px;text-align:center">${diB}</td>
+      <td style="padding:3px 6px;text-align:center">${stateChipFR(cs.cbs_fwd, cs.cbs_rev)}</td>
+      <td style="padding:3px 6px;text-align:center">${stateChipFR(cs.switch_fwd, cs.switch_rev)}</td>
+      <td style="padding:3px 6px;text-align:center">${stateChipFR(cs.epin_fwd, cs.epin_rev)}</td>
+      <td style="padding:3px 6px;text-align:center">${stB}</td>
+      <td style="padding:3px 6px;text-align:right"><button onclick="removeCustomScenario(${i})" style="font-size:11px;padding:0 6px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--red);cursor:pointer;line-height:18px">×</button></td>
+    </tr>`;
+  });
+  listEl.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">
+    <thead><tr style="background:var(--bg)">
+      <th style="text-align:left;padding:3px 6px;font-size:9px;color:var(--text3);border-bottom:1px solid var(--border2)">#</th>
+      <th style="padding:3px 4px;font-size:9px;color:var(--text3);border-bottom:1px solid var(--border2)">Type</th>
+      <th style="padding:3px 4px;font-size:9px;color:var(--text3);border-bottom:1px solid var(--border2)">D/I</th>
+      <th style="padding:3px 6px;font-size:9px;color:var(--text3);border-bottom:1px solid var(--border2)">CBS/FSS</th>
+      <th style="padding:3px 6px;font-size:9px;color:var(--text3);border-bottom:1px solid var(--border2)">Switch</th>
+      <th style="padding:3px 6px;font-size:9px;color:var(--text3);border-bottom:1px solid var(--border2)">EPIN</th>
+      <th style="padding:3px 6px;font-size:9px;color:var(--text3);border-bottom:1px solid var(--border2)">Status</th>
+      <th style="border-bottom:1px solid var(--border2)"></th>
+    </tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function getScenarioStats() {
+  let total = 0, sel = 0, okSel = 0, excSel = 0;
+  if (idfcScenarios) {
+    for (const scs of Object.values(idfcScenarios.groups || {})) {
+      for (const sc of scs) {
+        total++;
+        if (selectedScenarioIds.has(sc.id)) {
+          sel++;
+          if (sc.is_ok) okSel++; else excSel++;
+        }
+      }
+    }
+  }
+  // Custom entries always count as "selected"
+  for (const cs of customScenarios) {
+    sel++;
+    if (isOkCustom(cs)) okSel++; else excSel++;
+  }
+  return { total, selected: sel, okSelected: okSel, excSelected: excSel };
+}
+
+function toggleScenarioSelector() {
+  scenarioSelectorOpen = !scenarioSelectorOpen;
+  const panel = document.getElementById('scenario-selector-panel');
+  const arrow = document.getElementById('scenario-selector-arrow');
+  if (panel) panel.style.display = scenarioSelectorOpen ? 'block' : 'none';
+  if (arrow) arrow.textContent = scenarioSelectorOpen ? '▲ collapse' : '▼ expand';
+}
+
+function toggleCategory(grpLetter, checked) {
+  if (!idfcScenarios) return;
+  const scs = idfcScenarios.groups[grpLetter] || [];
+  scs.forEach(sc => {
+    if (checked) selectedScenarioIds.add(sc.id); else selectedScenarioIds.delete(sc.id);
+    const cb = document.getElementById('sc-cb-' + sc.id);
+    if (cb) cb.checked = checked;
+  });
+  const catCb = document.getElementById('cat-cb-' + grpLetter);
+  if (catCb) catCb.indeterminate = false;
+  updateScenarioSummary();
+  updateIDFCOkNote();
+}
+
+function toggleSingleScenario(scId, checked) {
+  if (checked) selectedScenarioIds.add(scId); else selectedScenarioIds.delete(scId);
+  if (idfcScenarios) {
+    for (const [grp, scs] of Object.entries(idfcScenarios.groups || {})) {
+      if (scs.some(s => s.id === scId)) {
+        const allChk = scs.every(s => selectedScenarioIds.has(s.id));
+        const noneChk = scs.every(s => !selectedScenarioIds.has(s.id));
+        const catCb = document.getElementById('cat-cb-' + grp);
+        if (catCb) { catCb.checked = allChk; catCb.indeterminate = !allChk && !noneChk; }
+        break;
+      }
+    }
+  }
+  updateScenarioSummary();
+  updateIDFCOkNote();
+}
+
+function toggleCategoryExpand(grp) {
+  const panel = document.getElementById('cat-sc-' + grp);
+  const arrow = document.getElementById('cat-arr-' + grp);
+  if (!panel) return;
+  const vis = panel.style.display !== 'none';
+  panel.style.display = vis ? 'none' : 'block';
+  if (arrow) arrow.textContent = vis ? '▶' : '▼';
+}
+
+function selectAllScenarios(checked) {
+  if (!idfcScenarios) return;
+  for (const [grp, scs] of Object.entries(idfcScenarios.groups || {})) {
+    for (const sc of scs) {
+      if (checked) selectedScenarioIds.add(sc.id); else selectedScenarioIds.delete(sc.id);
+      const cb = document.getElementById('sc-cb-' + sc.id);
+      if (cb) cb.checked = checked;
+    }
+    const catCb = document.getElementById('cat-cb-' + grp);
+    if (catCb) { catCb.checked = checked; catCb.indeterminate = false; }
+  }
+  updateScenarioSummary();
+  updateIDFCOkNote();
+}
+
+function selectByType(type) {
+  if (!idfcScenarios) return;
+  for (const [grp, scs] of Object.entries(idfcScenarios.groups || {})) {
+    for (const sc of scs) {
+      const match = sc.tran_type === type;
+      if (match) selectedScenarioIds.add(sc.id); else selectedScenarioIds.delete(sc.id);
+      const cb = document.getElementById('sc-cb-' + sc.id);
+      if (cb) cb.checked = match;
+    }
+    const allChk = scs.every(s => selectedScenarioIds.has(s.id));
+    const noneChk = scs.every(s => !selectedScenarioIds.has(s.id));
+    const catCb = document.getElementById('cat-cb-' + grp);
+    if (catCb) { catCb.checked = allChk; catCb.indeterminate = !allChk && !noneChk; }
+  }
+  updateScenarioSummary();
+  updateIDFCOkNote();
+}
+
+function updateScenarioSummary() {
+  const s = getScenarioStats();
+  const el = document.getElementById('scenario-selector-summary');
+  if (el) {
+    if (s.selected === s.total) el.textContent = `All ${s.total} scenarios`;
+    else if (s.selected === 0) el.textContent = 'No scenarios selected';
+    else el.textContent = `${s.selected} of ${s.total} scenarios selected`;
+  }
+  const badge = document.getElementById('scenario-count-badge');
+  if (badge) badge.textContent = `${s.okSelected} OK · ${s.excSelected} exception`;
+}
+
+function buildScenarioSelectorHTML() {
+  if (!idfcScenarios) return '<div style="color:var(--text3);padding:8px">Loading…</div>';
+  const groups = idfcScenarios.groups || {};
+  let html = '';
+  for (const [grp, scs] of Object.entries(groups)) {
+    const grpName = IDFC_GROUP_NAMES[grp] || grp;
+    const grpColor = IDFC_GROUP_COLORS[grp] || 'var(--text2)';
+    const okCnt = scs.filter(s => s.is_ok).length;
+    const excCnt = scs.length - okCnt;
+    const allSel = scs.every(s => selectedScenarioIds.has(s.id));
+    const noneSel = scs.every(s => !selectedScenarioIds.has(s.id));
+    html += `<div style="margin-bottom:5px;border:1px solid var(--border);border-radius:5px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface2);cursor:pointer"
+           onclick="toggleCategoryExpand('${grp}')">
+        <input type="checkbox" id="cat-cb-${grp}" ${allSel ? 'checked' : ''}
+          onclick="event.stopPropagation();toggleCategory('${grp}', this.checked)"
+          style="width:14px;height:14px;accent-color:var(--accent);cursor:pointer;flex-shrink:0">
+        <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:${grpColor};min-width:14px">${grp}</span>
+        <span style="font-size:11px;font-weight:600;color:var(--text);flex:1">${grpName}</span>
+        <span style="font-size:10px;color:var(--text3)">${scs.length}</span>
+        ${okCnt ? `<span style="font-size:8px;padding:1px 4px;border-radius:3px;background:var(--green-bg);color:var(--green);border:1px solid #1a5c3a">${okCnt}OK</span>` : ''}
+        ${excCnt ? `<span style="font-size:8px;padding:1px 4px;border-radius:3px;background:var(--surface);color:var(--text3);border:1px solid var(--border)">${excCnt}EXC</span>` : ''}
+        <span id="cat-arr-${grp}" style="font-size:9px;color:var(--text3)">▼</span>
+      </div>
+      <div id="cat-sc-${grp}">
+        ${scs.map(sc => {
+          const chk = selectedScenarioIds.has(sc.id) ? 'checked' : '';
+          return `<div style="display:flex;align-items:center;gap:6px;padding:4px 10px 4px 30px;border-top:0.5px solid var(--border)">
+            <input type="checkbox" id="sc-cb-${sc.id}" ${chk}
+              onclick="toggleSingleScenario('${sc.id}', this.checked)"
+              style="width:13px;height:13px;accent-color:var(--accent);cursor:pointer;flex-shrink:0">
+            <span style="font-family:var(--mono);font-size:10px;font-weight:600;color:${grpColor};min-width:30px">${sc.code}</span>
+            <span style="font-size:11px;color:var(--text);flex:1;line-height:1.3">${sc.name}</span>
+            <span class="${sc.tran_type === 'ATM' ? 'badge-atm' : 'badge-pos'}" style="font-size:8px;padding:1px 3px">${sc.tran_type}</span>
+            <span class="${sc.tran_category === 'D' ? 'badge-dom' : 'badge-int'}" style="font-size:8px;padding:1px 3px">${sc.tran_category === 'D' ? 'D' : 'I'}</span>
+            ${sc.is_ok
+              ? '<span style="font-size:8px;padding:1px 4px;border-radius:3px;background:var(--green-bg);color:var(--green);border:1px solid #1a5c3a">OK</span>'
+              : '<span style="font-size:8px;padding:1px 4px;border-radius:3px;background:var(--surface);color:var(--text3);border:1px solid var(--border)">EXC</span>'}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+  return html;
+}
+
+async function renderIDFCContent() {
+  const mc = document.getElementById('main-content');
+  if (!idfcScenarios) {
+    const res = await fetch('/api/idfc-visa-scenarios');
+    idfcScenarios = await res.json();
+    initSelectedScenarios();
+  }
+
+  const fileCards = IDFC_FILE_DEFS.map(f =>
+    `<div style="background:var(--surface2);border-radius:6px;padding:10px 12px;border:1px solid var(--border);text-align:center">
+      <div style="margin-bottom:5px"><span class="file-pill ${f.cls}" style="font-size:9px">${f.label}</span></div>
+      <div style="font-size:10px;color:var(--text2);line-height:1.4">${f.desc}</div>
+    </div>`
+  ).join('');
+
+  mc.innerHTML = `
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Output Files — 8 per run</div>
+        <div style="margin-left:auto;display:flex;gap:6px">
+          <span class="tag tag-network">VISA</span>
+          <span class="tag tag-role">Bank as Issuer</span>
+          <span class="tag" style="background:#0a1a30;color:#60a5fa;border:1px solid #1a3a6a">IDFC FIRST</span>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="idfc-file-grid">${fileCards}</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">Generate Test Files</div></div>
+      <div class="panel-body">
+        <div id="idfc-error" class="error-box hidden"></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px">
+          <div class="form-group">
+            <div class="form-label">Bank</div>
+            <select class="form-input" id="idfc-bank-select" style="cursor:pointer">
+              ${VISA_ISSUER_BANKS.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}
+            </select>
+            <div class="form-hint">VISA card issuer bank</div>
+          </div>
+          <div class="form-group">
+            <div class="form-label">Transaction Date</div>
+            <input class="form-input" type="date" id="idfc-tran-date" value="${todayStr()}">
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px">
+          <div class="form-group">
+            <div class="form-label">Volume (groups)</div>
+            <input class="form-input" type="number" id="idfc-volume" value="1000" min="1" max="1000000" oninput="updateIDFCOkNote()">
+            <div class="form-hint">Max 1,000,000 · 1 group = one scenario instance</div>
+          </div>
+          <div class="form-group">
+            <div class="form-label">Reconciled % target</div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:2px">
+              <input type="range" id="idfc-ok-pct" min="0" max="100" value="95" step="1"
+                style="flex:1;accent-color:var(--accent)" oninput="updateIDFCOkNote()">
+              <span id="idfc-ok-pct-display" style="font-family:var(--mono);font-size:16px;color:var(--accent);min-width:42px">95%</span>
+            </div>
+            <div class="form-hint" id="idfc-ok-pct-note">~950 OK · ~50 exceptions at this volume</div>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:14px">
+          <div class="form-label">GL Accounts <span style="color:var(--text3);font-weight:400;font-size:11px">(optional)</span></div>
+          <input class="form-input" type="text" id="idfc-gl-accounts"
+            placeholder="e.g. 0000098094102017, 0000098095102016"
+            oninput="validateIDFCGl()">
+          <div class="form-hint">ATM GL, POS GL — comma separated · leave blank to use defaults · 8–16 digits each</div>
+          <div id="idfc-gl-error" style="color:#e05252;font-size:12px;margin-top:4px;display:none"></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:16px;margin-bottom:14px;align-items:start">
+          <div class="form-group">
+            <div class="form-label">Number of Days <span style="color:var(--text3);font-weight:400;font-size:11px">(multi-day)</span></div>
+            <input class="form-input" type="number" id="idfc-num-days" value="1" min="1" max="5" step="1" style="width:90px">
+            <div class="form-hint">1–5 · a late-network ATM appears in CBS day 0, EPIN on last day</div>
+          </div>
+          <div class="form-group">
+            <div class="form-label">Late Network — Amount Scenarios</div>
+            <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px">
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+                <input type="checkbox" id="idfc-late-none" value="none" checked style="accent-color:var(--accent)">
+                Exact Match <span style="color:var(--text3)">(EPIN = CBS amount)</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+                <input type="checkbox" id="idfc-late-lower" value="lower" style="accent-color:var(--accent)">
+                EPIN Lower <span style="color:var(--text3)">(~10% less — partial settlement)</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+                <input type="checkbox" id="idfc-late-higher" value="higher" style="accent-color:var(--accent)">
+                EPIN Higher <span style="color:var(--text3)">(~10% more — over-settlement)</span>
+              </label>
+            </div>
+            <div class="form-hint">Each checked option generates an independent late transaction · applies when Days &gt; 1</div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div class="form-label" style="margin:0">Custom Entries</div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <span id="custom-scenario-count" style="font-size:10px;color:var(--text3)">0 / 100 · 0 OK · 0 EXC</span>
+              <button onclick="clearAllCustomScenarios()" style="font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">Clear all</button>
+            </div>
+          </div>
+          <div style="border:1px solid var(--border2);border-radius:6px;padding:10px 12px;background:var(--surface2)">
+            <!-- Row 1: type + category + Add button -->
+            <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <div style="display:flex;gap:6px;align-items:center">
+                <select id="cs-tran-type" style="height:28px;font-size:11px;border:1px solid var(--border2);border-radius:4px;background:var(--bg);color:var(--text);padding:0 6px;cursor:pointer">
+                  <option value="ATM">ATM</option>
+                  <option value="POS">POS</option>
+                  <option value="MERCH_CR">MC (Merch Credit)</option>
+                </select>
+                <select id="cs-tran-cat" style="height:28px;font-size:11px;border:1px solid var(--border2);border-radius:4px;background:var(--bg);color:var(--text);padding:0 6px;cursor:pointer">
+                  <option value="D">DOM</option>
+                  <option value="I">INT</option>
+                </select>
+              </div>
+              <button onclick="addCustomScenario()" style="height:28px;padding:0 14px;font-size:11px;font-weight:600;border-radius:4px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer">+ Add</button>
+            </div>
+            <!-- Row 2: file state inputs (Fwd / Rev per file) -->
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px">
+              ${['cbs','sw','ep'].map((pfx, i) => {
+                const label = ['CBS / FSS','Switch (TLF/PTLF)','EPIN'][i];
+                const numStyle = 'width:40px;height:26px;font-size:12px;text-align:center;border:1px solid var(--border2);border-radius:4px;background:var(--bg);color:var(--text);font-family:var(--mono)';
+                const lblStyle = 'font-size:9px;color:var(--text3);text-align:center;margin-bottom:2px';
+                return `<div>
+                  <div style="font-size:10px;color:var(--text2);font-weight:500;margin-bottom:6px">${label}</div>
+                  <div style="display:flex;gap:6px;align-items:flex-end">
+                    <div><div style="${lblStyle}">Fwd</div><input id="cs-${pfx}-fwd" type="number" min="0" max="9" value="1" style="${numStyle}"></div>
+                    <div><div style="${lblStyle}">Rev</div><input id="cs-${pfx}-rev" type="number" min="0" max="9" value="0" style="${numStyle}"></div>
+                    <button id="cs-${pfx}-null" data-active="0" onclick="toggleFileNull('${pfx}')" style="height:26px;padding:0 8px;font-size:9px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">null</button>
+                  </div>
+                </div>`;
+              }).join('')}
+            </div>
+            <div id="custom-scenario-list"></div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div class="form-label" style="margin:0">Scenarios</div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <span id="scenario-count-badge" style="font-size:10px;color:var(--text3)"></span>
+              <button onclick="selectAllScenarios(true)" style="font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer">All</button>
+              <button onclick="selectAllScenarios(false)" style="font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer">None</button>
+              <button onclick="selectByType('ATM')" style="font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--accent);cursor:pointer">ATM</button>
+              <button onclick="selectByType('POS')" style="font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--purple);cursor:pointer">POS</button>
+            </div>
+          </div>
+          <div style="border:1px solid var(--border2);border-radius:6px;overflow:hidden">
+            <button onclick="toggleScenarioSelector()" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--surface2);border:none;cursor:pointer;text-align:left">
+              <span id="scenario-selector-summary" style="font-size:12px;color:var(--text)">All scenarios</span>
+              <span id="scenario-selector-arrow" style="font-size:10px;color:var(--text3)">${scenarioSelectorOpen ? '▲ collapse' : '▼ expand'}</span>
+            </button>
+            <div id="scenario-selector-panel" style="display:${scenarioSelectorOpen ? 'block' : 'none'};max-height:420px;overflow-y:auto;padding:8px;background:var(--bg)">
+              ${buildScenarioSelectorHTML()}
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none">
+            <input type="checkbox" id="idfc-no-dup-cbsmcw" checked
+              style="width:14px;height:14px;accent-color:var(--accent);cursor:pointer;flex-shrink:0">
+            <span style="font-size:12px;color:var(--text2)">No duplicate rows in CBSMCW</span>
+          </label>
+          <span style="font-size:10px;color:var(--text3)">(uncheck to allow intentional duplicate test cases)</span>
+        </div>
+
+        <div class="actions-row">
+          <button class="btn btn-primary" id="idfc-generate-btn" onclick="runIDFCGenerate()">
+            <span>Generate</span>
+          </button>
+          <span style="font-size:11px;color:var(--text3)">CBSMCW · FSSGL · EPIN · TLF · PTLF · EP747 DOM · EP747 INT · manifest</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Test Cases Covered</div>
+        <div style="margin-left:auto;font-size:11px;color:var(--text3)" id="idfc-sc-count"></div>
+      </div>
+      <div class="panel-body" style="padding:0">
+        <div style="overflow-x:auto;max-height:520px;overflow-y:auto;">
+          <table class="sc-table">
+            <thead>
+              <tr>
+                <th>Code</th><th>Scenario</th><th>Type</th><th>D/I</th>
+                <th>Files Present</th><th>Action</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="idfc-sc-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="idfc-results-section" class="hidden">
+      <div id="idfc-success-banner" class="success-banner">
+        <span id="idfc-success-text">✓ Files generated</span>
+        <button class="btn btn-green" id="idfc-download-btn">⬇ Download .zip</button>
+      </div>
+      <div id="idfc-recon-summary"></div>
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">Generation Summary</div></div>
+        <div class="panel-body">
+          <div id="idfc-result-counts" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px"></div>
+          <div id="idfc-amount-summary" style="margin-bottom:16px"></div>
+          <div id="idfc-file-list" style="margin-bottom:16px"></div>
+          <div id="idfc-sc-result" style="overflow-x:auto;max-height:320px;overflow-y:auto"></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  renderIDFCScenarioTable();
+  renderCustomScenarioList();
+  updateIDFCOkNote();
+  updateScenarioSummary();
+}
+
+function validateGlNumbers(raw) {
+  if (!raw || !raw.trim()) return { valid: true, gls: [] };
+  const parts = raw.split(',').map(s => s.trim()).filter(Boolean);
+  if (parts.length === 0) return { valid: true, gls: [] };
+  if (parts.length > 2) return { valid: false, gls: [], error: 'Enter at most 2 GL numbers (ATM GL, POS GL)' };
+  for (const gl of parts) {
+    if (!/^\d+$/.test(gl)) return { valid: false, gls: [], error: `"${gl}" — digits only, no letters or spaces` };
+    if (gl.length < 8 || gl.length > 16) return { valid: false, gls: [], error: `"${gl}" must be 8–16 digits long` };
+    if (/^0+$/.test(gl)) return { valid: false, gls: [], error: `"${gl}" cannot be all zeros` };
+  }
+  return { valid: true, gls: parts };
+}
+
+function validateIDFCGl() {
+  const el = document.getElementById('idfc-gl-accounts');
+  const errEl = document.getElementById('idfc-gl-error');
+  if (!el || !errEl) return { valid: true, gls: [] };
+  const result = validateGlNumbers(el.value);
+  if (!result.valid) {
+    errEl.textContent = '✗ ' + result.error;
+    errEl.style.display = 'block';
+    el.style.outline = '2px solid #e05252';
+  } else {
+    errEl.style.display = 'none';
+    el.style.outline = '';
+  }
+  return result;
+}
+
+function validateNFSGl() {
+  const el = document.getElementById('nfs-gl-accounts');
+  const errEl = document.getElementById('nfs-gl-error');
+  if (!el || !errEl) return { valid: true, gls: [] };
+  const result = validateGlNumbers(el.value);
+  if (!result.valid) {
+    errEl.textContent = '✗ ' + result.error;
+    errEl.style.display = 'block';
+    el.style.outline = '2px solid #e05252';
+  } else {
+    errEl.style.display = 'none';
+    el.style.outline = '';
+  }
+  return result;
+}
+
+function updateIDFCOkNote() {
+  const vol = parseInt(document.getElementById('idfc-volume')?.value || 1000);
+  const pct = parseInt(document.getElementById('idfc-ok-pct')?.value || 95);
+  if (document.getElementById('idfc-ok-pct-display'))
+    document.getElementById('idfc-ok-pct-display').textContent = pct + '%';
+  const s = getScenarioStats();
+  const noteEl = document.getElementById('idfc-ok-pct-note');
+  if (!noteEl) return;
+
+  const cOk  = customScenarios.filter(isOkCustom).length;
+  const cExc = customScenarios.length - cOk;
+  const regSel = s.selected - customScenarios.length;
+  const regOk  = s.okSelected - cOk;
+  const regExc = s.excSelected - cExc;
+
+  if (s.selected === 0) {
+    noteEl.textContent = '⚠ No scenarios selected';
+  } else if (regSel === 0) {
+    noteEl.textContent = `${customScenarios.length} custom entr${customScenarios.length===1?'y':'ies'} · ${cOk} OK · ${cExc} EXC`;
+  } else if (regExc === 0) {
+    const cNote = customScenarios.length ? ` + ${customScenarios.length} custom (${cOk} OK)` : '';
+    noteEl.textContent = `100% achievable — only OK scenarios · ~${vol.toLocaleString()} groups${cNote}`;
+  } else {
+    const maxPct  = Math.round(regOk / regSel * 100);
+    const effPct  = Math.min(pct, maxPct);
+    const okEst   = Math.round(vol * effPct / 100);
+    const cNote   = customScenarios.length ? ` + ${customScenarios.length} custom (${cOk} OK)` : '';
+    noteEl.textContent =
+      `Max ${maxPct}% · ~${okEst.toLocaleString()} OK · ~${(vol-okEst).toLocaleString()} EXC${cNote}`;
+  }
+}
+
+function renderIDFCScenarioTable() {
+  if (!idfcScenarios) return;
+  const groups = idfcScenarios.groups || {};
+  const total = idfcScenarios.total || 0;
+  const tbody = document.getElementById('idfc-sc-tbody');
+  const countEl = document.getElementById('idfc-sc-count');
+  if (!tbody) return;
+
+  countEl.textContent = `${total} scenarios · exhaustive`;
+
+  const FILE_ICONS = {
+    epin: ['pill-epin','EPIN'], tlf: ['pill-tlf','TLF'], ptlf: ['pill-ptlf','PTLF'],
+    cbsmcw: ['pill-cbs2','CBS'], fssgl: ['pill-cbs2','GL'], ep747_dom: ['pill-ep747','EP7D'], ep747_int: ['pill-ep747','EP7I']
+  };
+
+  let html = '';
+  for (const [grpLetter, scenarios] of Object.entries(groups)) {
+    const grpName = IDFC_GROUP_NAMES[grpLetter] || grpLetter;
+    const grpColor = IDFC_GROUP_COLORS[grpLetter] || 'var(--text2)';
+    const okCount = scenarios.filter(s => s.is_ok).length;
+    const excCount = scenarios.length - okCount;
+    html += `<tr>
+      <td colspan="7" style="background:var(--bg);padding:8px 12px;border-top:1px solid var(--border2)">
+        <span style="font-family:var(--mono);font-size:11px;font-weight:600;color:${grpColor}">${grpLetter}</span>
+        <span style="font-size:11px;font-weight:600;color:var(--text);margin-left:8px">${grpName}</span>
+        <span style="font-size:10px;color:var(--text3);margin-left:10px">${scenarios.length} cases</span>
+        ${okCount ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:var(--green-bg);color:var(--green);border:1px solid #1a5c3a;margin-left:6px">${okCount} OK</span>` : ''}
+        ${excCount ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:var(--surface2);color:var(--text3);border:1px solid var(--border);margin-left:4px">${excCount} EXC</span>` : ''}
+      </td>
+    </tr>`;
+
+    html += scenarios.map(sc => {
+      const typeBadge = sc.tran_type === 'ATM'
+        ? `<span class="badge-atm">ATM</span>`
+        : sc.tran_type === 'MERCH_CR' ? `<span class="badge-mc">MC</span>`
+        : `<span class="badge-pos">POS</span>`;
+      const diFlag = sc.tran_category === 'D'
+        ? `<span class="badge-dom">DOM</span>`
+        : `<span class="badge-int">INT</span>`;
+      const fs = sc.file_states || {};
+      const filePills = Object.entries(fs).map(([k, v]) => {
+        const [cls, lbl] = FILE_ICONS[k] || ['pill-nfs', k];
+        const sym = v === 1 ? '+' : v === -1 ? '−' : v === 0 ? '±' : '';
+        return `<span class="file-pill ${cls}" style="font-size:8px">${lbl}${sym}</span>`;
+      }).join('');
+      const okBadge = sc.is_ok
+        ? `<span style="font-size:9px;padding:2px 5px;border-radius:3px;background:var(--green-bg);color:var(--green);border:1px solid #1a5c3a">OK</span>`
+        : `<span style="font-size:9px;padding:2px 5px;border-radius:3px;background:var(--surface2);color:var(--text3);border:1px solid var(--border)">EXC</span>`;
+      return `<tr>
+        <td style="font-family:var(--mono);font-size:10px;font-weight:600;color:${grpColor}">${sc.code}</td>
+        <td style="max-width:240px;font-size:11px;color:var(--text)">${sc.name}</td>
+        <td>${typeBadge}</td>
+        <td>${diFlag}</td>
+        <td style="display:flex;flex-wrap:wrap;gap:2px;min-width:120px">${filePills || '<span style="color:var(--text3);font-size:10px">—</span>'}</td>
+        <td style="font-size:10px;color:var(--text2)">${sc.action || ''}</td>
+        <td>${okBadge}</td>
+      </tr>`;
+    }).join('');
+  }
+  tbody.innerHTML = html;
+}
+
+async function runIDFCGenerate() {
+  const s = getScenarioStats();
+  const errBox = document.getElementById('idfc-error');
+  errBox.classList.add('hidden');
+  if (s.selected === 0) {
+    errBox.textContent = '✗ No scenarios selected. Select from the list below or add custom entries above.';
+    errBox.classList.remove('hidden');
+    return;
+  }
+  const glResult = validateIDFCGl();
+  if (!glResult.valid) {
+    errBox.textContent = '✗ GL Account: ' + glResult.error;
+    errBox.classList.remove('hidden');
+    return;
+  }
+  const btn = document.getElementById('idfc-generate-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div><span>Generating…</span>';
+
+  const volume = parseInt(document.getElementById('idfc-volume').value);
+  const tranDate = document.getElementById('idfc-tran-date').value;
+  const okPct = parseFloat(document.getElementById('idfc-ok-pct')?.value || 95);
+  const bankId = document.getElementById('idfc-bank-select')?.value || 'idfc';
+  const scenarioIds = Array.from(selectedScenarioIds);
+  const numDays = Math.max(1, Math.min(5, parseInt(document.getElementById('idfc-num-days')?.value || 1)));
+  const lateNetworkMismatches = ['none', 'lower', 'higher'].filter(v => document.getElementById(`idfc-late-${v}`)?.checked);
+  const latePayload = lateNetworkMismatches.length ? lateNetworkMismatches : ['none'];
+
+  try {
+    const res = await fetch('/api/generate-idfc-visa', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ volume, tran_date: tranDate, bank_id: bankId, ok_pct: okPct, selected_scenarios: scenarioIds, custom_scenarios: customScenarios, gl_accounts: glResult.gls, no_cbsmcw_duplicates: document.getElementById('idfc-no-dup-cbsmcw')?.checked !== false, num_days: numDays, late_network_mismatches: latePayload }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'Generation failed');
+    idfcLastResult = data;
+    renderIDFCResults(data);
+  } catch(e) {
+    errBox.textContent = '✗ ' + e.message;
+    errBox.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>Generate</span>';
+  }
+}
+
+function renderIDFCResults(data) {
+  document.getElementById('idfc-results-section').classList.remove('hidden');
+  const counts = data.counts || {};
+  const rs = data.recon_summary || {};
+  const segs = rs.segments || {};
+  const excBreak = rs.exception_breakdown || {};
+  const actualPct = rs.ok_pct || 0;
+
+  document.getElementById('idfc-success-text').textContent =
+    `✓ ${counts.total_groups || 0} groups — ${actualPct}% reconciled (${rs.ok_count||0} OK · ${rs.exception_count||0} exceptions)`;
+
+  document.getElementById('idfc-download-btn').onclick = () =>
+    window.location.href = `/api/download-idfc-visa/${data.run_id}`;
+
+  document.getElementById('idfc-result-counts').innerHTML = `
+    <div class="result-card"><div class="result-card-label" style="color:var(--green)">Total Groups</div><div class="result-card-value" style="color:var(--green)">${counts.total_groups||0}</div><div style="font-size:10px;color:var(--text3);margin-top:4px">${actualPct}% reconciled</div></div>
+    <div class="result-card"><div class="result-card-label" style="color:var(--green)">Reconciled</div><div class="result-card-value" style="color:var(--green)">${rs.ok_count||0}</div></div>
+    <div class="result-card"><div class="result-card-label" style="color:var(--red)">Exceptions</div><div class="result-card-value" style="color:var(--red)">${rs.exception_count||0}</div></div>
+    <div class="result-card"><div class="result-card-label" style="color:var(--accent)">ATM / <span style="color:var(--purple)">POS</span></div><div class="result-card-value" style="font-size:16px">${counts.atm||0}<span style="color:var(--text3);font-size:14px"> / </span><span style="color:var(--purple)">${counts.pos||0}</span></div></div>
+    <div class="result-card"><div class="result-card-label" style="color:var(--amber)">DOM / <span style="color:var(--red)">INT</span></div><div class="result-card-value" style="font-size:16px">${counts.domestic||0}<span style="color:var(--text3);font-size:14px"> / </span><span style="color:var(--red)">${counts.international||0}</span></div></div>
+  `;
+
+  // ── Amount Summary Panel ──────────────────────────────────────────────────
+  const amtSum = data.amount_summary || {};
+  const amtFwd = amtSum.forward || {};
+  const amtRev = amtSum.reversal || {};
+  const amtTF  = amtSum.total_forward  || {count:0, amount_rs:0};
+  const amtTR  = amtSum.total_reversal || {count:0, amount_rs:0};
+
+  function fmtINR(v) {
+    if (!v) return '—';
+    if (v >= 10000000) return '₹' + (v/10000000).toFixed(2) + ' Cr';
+    if (v >= 100000)   return '₹' + (v/100000).toFixed(2) + ' L';
+    if (v >= 1000)     return '₹' + (v/1000).toFixed(1) + 'K';
+    return '₹' + v.toFixed(0);
+  }
+  function amtCell(k, bucket) {
+    const d = bucket[k] || {count:0, amount_rs:0};
+    if (!d.count) return `<td style="text-align:right;color:var(--text3);font-size:10px">—</td>`;
+    return `<td style="text-align:right">
+      <div style="font-family:var(--mono);font-size:11px;font-weight:600">${fmtINR(d.amount_rs)}</div>
+      <div style="font-size:9px;color:var(--text3)">${d.count} txns</div>
+    </td>`;
+  }
+  function totalCell(d, color) {
+    if (!d.count) return `<td style="text-align:right;color:var(--text3);font-size:10px">—</td>`;
+    return `<td style="text-align:right;background:var(--bg);border-left:2px solid var(--border2)">
+      <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:${color}">${fmtINR(d.amount_rs)}</div>
+      <div style="font-size:9px;color:var(--text3)">${d.count} txns</div>
+    </td>`;
+  }
+  const AMT_COLS = ['dom_atm','dom_pos','dom_mc','int_atm','int_pos','int_mc'];
+  const AMT_COL_LABELS = {'dom_atm':'DOM ATM','dom_pos':'DOM POS','dom_mc':'DOM MC','int_atm':'INT ATM','int_pos':'INT POS','int_mc':'INT MC'};
+  const AMT_COL_COLORS = {'dom_atm':'var(--accent)','dom_pos':'var(--purple)','dom_mc':'var(--green)','int_atm':'var(--red)','int_pos':'var(--amber)','int_mc':'#818cf8'};
+  const netAmt = amtSum.net_amount_rs || 0;
+  document.getElementById('idfc-amount-summary').innerHTML = `
+    <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Transaction Amount Summary</div>
+    <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead>
+        <tr style="background:var(--bg)">
+          <th style="text-align:left;padding:6px 10px;color:var(--text3);font-size:10px;font-weight:600;border-bottom:1px solid var(--border2)"></th>
+          ${AMT_COLS.map(k => `<th style="text-align:right;padding:6px 8px;color:${AMT_COL_COLORS[k]};font-size:10px;font-weight:600;border-bottom:1px solid var(--border2)">${AMT_COL_LABELS[k]}</th>`).join('')}
+          <th style="text-align:right;padding:6px 10px;color:var(--text2);font-size:10px;font-weight:600;border-bottom:1px solid var(--border2);border-left:2px solid var(--border2)">TOTAL</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background:var(--surface2)">
+          <td style="padding:6px 10px;font-size:10px;font-weight:600;color:var(--text2);white-space:nowrap">Forward</td>
+          ${AMT_COLS.map(k => amtCell(k, amtFwd)).join('')}
+          ${totalCell(amtTF, 'var(--text)')}
+        </tr>
+        <tr>
+          <td style="padding:6px 10px;font-size:10px;font-weight:600;color:var(--amber);white-space:nowrap">Reversal</td>
+          ${AMT_COLS.map(k => amtCell(k, amtRev)).join('')}
+          ${totalCell(amtTR, 'var(--amber)')}
+        </tr>
+        <tr style="background:var(--bg);border-top:1px solid var(--border2)">
+          <td style="padding:6px 10px;font-size:10px;font-weight:600;color:var(--text3);white-space:nowrap">Net (Fwd − Rev)</td>
+          ${AMT_COLS.map(k => {
+            const fv = (amtFwd[k]||{}).amount_rs||0;
+            const rv = (amtRev[k]||{}).amount_rs||0;
+            const net = fv - rv;
+            if (!fv && !rv) return `<td style="text-align:right;color:var(--text3);font-size:10px">—</td>`;
+            const col = net >= 0 ? 'var(--text2)' : 'var(--red)';
+            return `<td style="text-align:right"><span style="font-family:var(--mono);font-size:10px;color:${col}">${fmtINR(Math.abs(net))}${net<0?' CR':''}</span></td>`;
+          }).join('')}
+          <td style="text-align:right;border-left:2px solid var(--border2)">
+            <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:${netAmt>=0?'var(--green)':'var(--red)'}">${fmtINR(Math.abs(netAmt))}${netAmt<0?' CR':''}</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    </div>`;
+
+  // ── Reconciliation Summary Panel ──────────────────────────────────────────
+  const SEG_LABELS = { dom_atm: 'DOM ATM', int_atm: 'INT ATM', dom_pos: 'DOM POS', int_pos: 'INT POS' };
+  const SEG_COLORS = { dom_atm: 'var(--accent)', int_atm: 'var(--red)', dom_pos: 'var(--purple)', int_pos: 'var(--amber)' };
+
+  const segCards = Object.entries(SEG_LABELS).map(([key, label]) => {
+    const s = segs[key] || { ok: 0, total: 0, exception: 0, ok_pct: 0 };
+    const pct = s.ok_pct || 0;
+    const barW = Math.round(pct);
+    const col = SEG_COLORS[key];
+    return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px 14px">
+      <div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:${col};margin-bottom:8px">${label}</div>
+      <div style="font-family:var(--mono);font-size:20px;font-weight:600;margin-bottom:2px">${pct}%</div>
+      <div style="height:4px;background:var(--border);border-radius:2px;margin-bottom:8px">
+        <div style="height:4px;background:${col};border-radius:2px;width:${barW}%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3)">
+        <span><span style="color:var(--green)">${s.ok}</span> OK</span>
+        <span><span style="color:var(--red)">${s.exception}</span> exc</span>
+        <span>${s.total} total</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  const EXC_COLORS = {
+    AMOUNT_MISMATCH: 'var(--amber)', DATE_MISMATCH: 'var(--purple)', DUPLICATE: 'var(--red)',
+    DOUBLE_DEBIT: '#f97316', MISSING_FILE: 'var(--text2)', CROSSFIRE: '#818cf8', OTHER: 'var(--text3)',
+  };
+  const totalExc = Object.values(excBreak).reduce((a, b) => a + b, 0) || 1;
+  const excBars = Object.entries(excBreak).map(([cat, cnt]) => {
+    const pct = Math.round(cnt / totalExc * 100);
+    const col = EXC_COLORS[cat] || 'var(--text3)';
+    return `<div style="margin-bottom:6px">
+      <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px">
+        <span style="color:${col}">${cat.replace(/_/g,' ')}</span>
+        <span style="font-family:var(--mono);color:var(--text2)">${cnt} <span style="color:var(--text3)">(${pct}%)</span></span>
+      </div>
+      <div style="height:3px;background:var(--border);border-radius:2px">
+        <div style="height:3px;background:${col};border-radius:2px;width:${pct}%"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('idfc-recon-summary').innerHTML = `
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-header">
+        <div class="panel-title">Reconciliation Summary</div>
+        <div style="margin-left:auto;font-family:var(--mono);font-size:13px;color:var(--green)">${actualPct}% overall</div>
+      </div>
+      <div class="panel-body">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">${segCards}</div>
+        ${Object.keys(excBreak).length ? `
+        <div style="background:var(--surface2);border-radius:6px;padding:12px 14px;border:1px solid var(--border)">
+          <div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Exception Breakdown</div>
+          ${excBars}
+        </div>` : ''}
+      </div>
+    </div>`;
+
+  const files = data.files || {};
+  const errors = data.errors || {};
+  const fileHtml = IDFC_FILE_DEFS.map(fd => {
+    const fname = files[fd.id];
+    const err = errors[fd.id];
+    if (err) return `<div style="background:var(--red-bg);border:1px solid #5c2020;border-radius:5px;padding:6px 10px;font-size:10px">
+      <span class="file-pill ${fd.cls}" style="font-size:8px">${fd.label}</span>
+      <span style="color:var(--red);margin-left:6px">✗ ${err}</span>
+    </div>`;
+    return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:6px 10px;font-size:10px;display:flex;align-items:center;gap:8px">
+      <span class="file-pill ${fd.cls}" style="font-size:8px">${fd.label}</span>
+      <span style="color:var(--text2);font-family:var(--mono);font-size:10px;flex:1">${fname || '—'}</span>
+      ${fname ? `<span style="color:var(--green);font-size:10px">✓</span>` : ''}
+    </div>`;
+  }).join('');
+  document.getElementById('idfc-file-list').innerHTML = `
+    <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Generated Files</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${fileHtml}</div>`;
+
+  const scenarios = data.scenarios || [];
+  // Group result scenarios by group letter for display
+  const resultByGroup = {};
+  scenarios.forEach(sc => {
+    const g = sc.group || '?';
+    if (!resultByGroup[g]) resultByGroup[g] = [];
+    resultByGroup[g].push(sc);
+  });
+  let scHtml = `<div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Scenario Breakdown</div>
+    <table class="sc-table"><thead><tr>
+      <th>Code</th><th>Scenario</th><th>Type</th><th>D/I</th><th>Action</th><th style="text-align:right">Groups</th><th></th>
+    </tr></thead><tbody>`;
+  for (const [grp, scs] of Object.entries(resultByGroup)) {
+    const grpColor = IDFC_GROUP_COLORS[grp] || 'var(--text2)';
+    const grpName = IDFC_GROUP_NAMES[grp] || grp;
+    scHtml += `<tr><td colspan="7" style="background:var(--bg);padding:5px 10px;border-top:1px solid var(--border2)">
+      <span style="font-family:var(--mono);font-size:10px;font-weight:600;color:${grpColor}">${grp}</span>
+      <span style="font-size:10px;color:var(--text2);margin-left:6px">${grpName}</span>
+    </td></tr>`;
+    scs.forEach(sc => {
+      const okBadge = sc.is_ok
+        ? `<span style="font-size:9px;padding:1px 4px;border-radius:3px;background:var(--green-bg);color:var(--green);border:1px solid #1a5c3a">OK</span>`
+        : `<span style="font-size:9px;padding:1px 4px;border-radius:3px;background:var(--surface2);color:var(--text3);border:1px solid var(--border)">EXC</span>`;
+      scHtml += `<tr>
+        <td style="font-family:var(--mono);font-size:10px;font-weight:600;color:${grpColor}">${sc.code||''}</td>
+        <td style="font-size:11px;color:var(--text)">${sc.name}</td>
+        <td>${sc.tran_type === 'ATM' ? '<span class="badge-atm">ATM</span>' : '<span class="badge-pos">POS</span>'}</td>
+        <td>${sc.tran_category === 'D' ? '<span class="badge-dom">DOM</span>' : '<span class="badge-int">INT</span>'}</td>
+        <td style="font-size:10px;color:var(--text2)">${sc.action||''}</td>
+        <td style="text-align:right;font-family:var(--mono)">${sc.count}</td>
+        <td style="text-align:right">${okBadge}</td>
+      </tr>`;
+    });
+  }
+  scHtml += '</tbody></table>';
+  document.getElementById('idfc-sc-result').innerHTML = scHtml;
+
+  document.getElementById('idfc-results-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ─────────────────────────────────────────────
+// IDFC NFS ACQUIRER VIEW
+// ─────────────────────────────────────────────
+let nfsScenarios = null;
+let nfsLastResult = null;
+let nfsSelectedIds = new Set();
+let nfsSelectorOpen = false;
+let nfsCustomScenarios = [];
+
+const NFS_FILE_DEFS = [
+  { id: 'nfs',    label: 'NFS',    cls: 'pill-nfs',  desc: 'NFS Interchange (407-char)' },
+  { id: 'tlf',    label: 'TLF',    cls: 'pill-tlf',  desc: 'ATM Switch Log' },
+  { id: 'cbsmcw', label: 'CBSMCW', cls: 'pill-cbs2', desc: 'CBS Card File (OWDR/OWCR)' },
+  { id: 'fssgl',  label: 'FSSGL',  cls: 'pill-cbs2', desc: 'CBS GL File' },
+  { id: 'bgl',    label: 'BGL',    cls: 'pill-ep747', desc: 'Balance GL Report' },
+];
+
+const NFS_ACQ_BANKS = [
+  { id: 'idfc', name: 'IDFC FIRST Bank' },
+];
+
+const NFS_GROUP_NAMES = {
+  A: 'Perfect Match', B: 'Single Full Reversal Same Day', C: 'Reversal on Different Day',
+  D: 'Partial Reversal', E: 'Multiple Reversals',
+  G: 'Disputes / Chargeback', H: 'Fee Transactions', I: 'Amount Mismatches',
+  J: 'Date Mismatches', K: 'Duplicates & Double Debit', L: 'Missing Files',
+  M: 'Crossfire / Direction Mismatch', N: 'PNC Matrix Filler', CUSTOM: 'Custom Entries',
+};
+
+function initNFSSelectedScenarios() {
+  if (!nfsScenarios) return;
+  nfsSelectedIds.clear();
+  for (const scs of Object.values(nfsScenarios.groups || {}))
+    for (const sc of scs) nfsSelectedIds.add(sc.id);
+}
+
+function isOkNFSCustom(cs) {
+  if (cs.cbs_fwd === null || cs.switch_fwd === null || cs.nfs_fwd === null) return false;
+  const cbsKey = `${cs.cbs_fwd}/${cs.cbs_rev||0}`;
+  const swKey  = `${cs.switch_fwd}/${cs.switch_rev||0}`;
+  const nfsKey = `${cs.nfs_fwd}/${cs.nfs_rev||0}`;
+  return cbsKey === swKey && swKey === nfsKey && (cs.cbs_fwd + (cs.cbs_rev||0)) > 0;
+}
+
+function getNFSScenarioStats() {
+  let total = 0, sel = 0, okSel = 0, excSel = 0;
+  if (nfsScenarios) {
+    for (const scs of Object.values(nfsScenarios.groups || {})) {
+      for (const sc of scs) {
+        total++;
+        if (nfsSelectedIds.has(sc.id)) {
+          sel++;
+          if (sc.is_ok) okSel++; else excSel++;
+        }
+      }
+    }
+  }
+  for (const cs of nfsCustomScenarios) {
+    sel++;
+    if (isOkNFSCustom(cs)) okSel++; else excSel++;
+  }
+  return { total, selected: sel, okSelected: okSel, excSelected: excSel };
+}
+
+function updateNFSOkNote() {
+  const vol = parseInt(document.getElementById('nfs-volume')?.value || 1000);
+  const pct = parseInt(document.getElementById('nfs-ok-pct')?.value || 95);
+  if (document.getElementById('nfs-ok-pct-display'))
+    document.getElementById('nfs-ok-pct-display').textContent = pct + '%';
+  const noteEl = document.getElementById('nfs-ok-pct-note');
+  if (noteEl) noteEl.textContent = `~${Math.round(vol * pct / 100)} OK · ~${Math.round(vol * (100-pct) / 100)} exceptions at this volume`;
+}
+
+function toggleNFSCategory(grpLetter, checked) {
+  if (!nfsScenarios) return;
+  const scs = nfsScenarios.groups[grpLetter] || [];
+  scs.forEach(sc => {
+    if (checked) nfsSelectedIds.add(sc.id); else nfsSelectedIds.delete(sc.id);
+    const cb = document.getElementById('nfs-sc-cb-' + sc.id);
+    if (cb) cb.checked = checked;
+  });
+  const catCb = document.getElementById('nfs-cat-cb-' + grpLetter);
+  if (catCb) catCb.indeterminate = false;
+  updateNFSScenarioSummary();
+  updateNFSOkNote();
+}
+
+function toggleNFSSingle(scId, checked) {
+  if (checked) nfsSelectedIds.add(scId); else nfsSelectedIds.delete(scId);
+  if (nfsScenarios) {
+    for (const [grp, scs] of Object.entries(nfsScenarios.groups || {})) {
+      if (scs.some(s => s.id === scId)) {
+        const allChk  = scs.every(s => nfsSelectedIds.has(s.id));
+        const noneChk = scs.every(s => !nfsSelectedIds.has(s.id));
+        const catCb   = document.getElementById('nfs-cat-cb-' + grp);
+        if (catCb) { catCb.checked = allChk; catCb.indeterminate = !allChk && !noneChk; }
+        break;
+      }
+    }
+  }
+  updateNFSScenarioSummary();
+  updateNFSOkNote();
+}
+
+function toggleNFSCategoryExpand(grp) {
+  const panel = document.getElementById('nfs-cat-sc-' + grp);
+  const arrow = document.getElementById('nfs-cat-arr-' + grp);
+  if (!panel) return;
+  const vis = panel.style.display !== 'none';
+  panel.style.display = vis ? 'none' : 'block';
+  if (arrow) arrow.textContent = vis ? '▶' : '▼';
+}
+
+function selectAllNFSScenarios(checked) {
+  if (!nfsScenarios) return;
+  for (const [grp, scs] of Object.entries(nfsScenarios.groups || {})) {
+    for (const sc of scs) {
+      if (checked) nfsSelectedIds.add(sc.id); else nfsSelectedIds.delete(sc.id);
+      const cb = document.getElementById('nfs-sc-cb-' + sc.id);
+      if (cb) cb.checked = checked;
+    }
+    const catCb = document.getElementById('nfs-cat-cb-' + grp);
+    if (catCb) { catCb.checked = checked; catCb.indeterminate = false; }
+  }
+  updateNFSScenarioSummary();
+  updateNFSOkNote();
+}
+
+function updateNFSScenarioSummary() {
+  const s = getNFSScenarioStats();
+  const el = document.getElementById('nfs-scenario-summary');
+  if (el) {
+    if (s.selected === s.total) el.textContent = `All ${s.total} scenarios`;
+    else if (s.selected === 0) el.textContent = 'No scenarios selected';
+    else el.textContent = `${s.selected} of ${s.total} scenarios selected`;
+  }
+  const badge = document.getElementById('nfs-sc-count-badge');
+  if (badge) badge.textContent = `${s.okSelected} OK · ${s.excSelected} exception`;
+}
+
+function _readNFSFileState(prefix) {
+  const btn = document.getElementById(`ncs-${prefix}-null`);
+  if (btn && btn.dataset.active === '1') return { fwd: null, rev: null };
+  const fwd = Math.min(9, Math.max(0, parseInt(document.getElementById(`ncs-${prefix}-fwd`)?.value || '1') || 0));
+  const rev = Math.min(9, Math.max(0, parseInt(document.getElementById(`ncs-${prefix}-rev`)?.value || '0') || 0));
+  return { fwd, rev };
+}
+
+function toggleNFSFileNull(prefix) {
+  const btn   = document.getElementById(`ncs-${prefix}-null`);
+  const fwdEl = document.getElementById(`ncs-${prefix}-fwd`);
+  const revEl = document.getElementById(`ncs-${prefix}-rev`);
+  if (!btn) return;
+  const nowNull = btn.dataset.active !== '1';
+  btn.dataset.active = nowNull ? '1' : '0';
+  btn.style.color       = nowNull ? 'var(--amber)' : 'var(--text3)';
+  btn.style.borderColor = nowNull ? 'var(--amber)' : 'var(--border2)';
+  btn.textContent = nowNull ? '∅ null' : 'null';
+  [fwdEl, revEl].forEach(el => { if (el) { el.disabled = nowNull; el.style.opacity = nowNull ? '0.35' : '1'; } });
+}
+
+function addNFSCustomScenario() {
+  if (nfsCustomScenarios.length >= 100) return;
+  const wasEmpty = nfsCustomScenarios.length === 0;
+  const cbs = _readNFSFileState('cbs');
+  const sw  = _readNFSFileState('sw');
+  const nfs = _readNFSFileState('nfs');
+  nfsCustomScenarios.push({
+    cbs_fwd: cbs.fwd, cbs_rev: cbs.rev,
+    switch_fwd: sw.fwd, switch_rev: sw.rev,
+    nfs_fwd: nfs.fwd, nfs_rev: nfs.rev,
+  });
+  if (wasEmpty) selectAllNFSScenarios(false);
+  renderNFSCustomList();
+  updateNFSOkNote();
+}
+
+function removeNFSCustomScenario(idx) {
+  nfsCustomScenarios.splice(idx, 1);
+  renderNFSCustomList();
+  updateNFSOkNote();
+}
+
+function clearAllNFSCustomScenarios() {
+  nfsCustomScenarios = [];
+  renderNFSCustomList();
+  updateNFSOkNote();
+}
+
+function renderNFSCustomList() {
+  const listEl  = document.getElementById('nfs-custom-list');
+  const countEl = document.getElementById('nfs-custom-count');
+  if (!listEl) return;
+  const n   = nfsCustomScenarios.length;
+  const okN = nfsCustomScenarios.filter(isOkNFSCustom).length;
+  if (countEl) countEl.textContent = `${n} / 100 · ${okN} OK · ${n - okN} EXC`;
+  if (n === 0) {
+    listEl.innerHTML = `<div style="font-size:10px;color:var(--text3);font-style:italic;padding:4px 0">No entries yet — use the controls above to add scenarios.</div>`;
+    return;
+  }
+  let rows = '';
+  nfsCustomScenarios.forEach((cs, i) => {
+    const ok  = isOkNFSCustom(cs);
+    const stB = ok
+      ? `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:var(--green-bg);color:var(--green);border:1px solid #1a5c3a">OK</span>`
+      : `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:var(--surface2);color:var(--text3);border:1px solid var(--border)">EXC</span>`;
+    rows += `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:3px 6px;font-family:var(--mono);font-size:10px;color:var(--text3)">${i+1}</td>
+      <td style="padding:3px 6px;text-align:center">${stateChipFR(cs.cbs_fwd, cs.cbs_rev)}</td>
+      <td style="padding:3px 6px;text-align:center">${stateChipFR(cs.switch_fwd, cs.switch_rev)}</td>
+      <td style="padding:3px 6px;text-align:center">${stateChipFR(cs.nfs_fwd, cs.nfs_rev)}</td>
+      <td style="padding:3px 6px;text-align:center">${stB}</td>
+      <td style="padding:3px 6px;text-align:right"><button onclick="removeNFSCustomScenario(${i})" style="font-size:11px;padding:0 6px;border-radius:3px;border:1px solid var(--border2);background:transparent;color:var(--red);cursor:pointer;line-height:18px">×</button></td>
+    </tr>`;
+  });
+  listEl.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">
+    <thead><tr style="background:var(--bg)">
+      <th style="text-align:left;padding:3px 6px;font-size:9px;color:var(--text3);border-bottom:1px solid var(--border2)">#</th>
+      <th style="padding:3px 6px;font-size:9px;color:var(--text3);border-bottom:1px solid var(--border2)">CBS/FSS</th>
+      <th style="padding:3px 6px;font-size:9px;color:var(--text3);border-bottom:1px solid var(--border2)">TLF</th>
+      <th style="padding:3px 6px;font-size:9px;color:var(--text3);border-bottom:1px solid var(--border2)">NFS</th>
+      <th style="padding:3px 6px;font-size:9px;color:var(--text3);border-bottom:1px solid var(--border2)">Status</th>
+      <th style="border-bottom:1px solid var(--border2)"></th>
+    </tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function buildNFSSelectorHTML() {
+  if (!nfsScenarios) return '<div style="color:var(--text3);padding:8px">Loading…</div>';
+  const groups = nfsScenarios.groups || {};
+  let html = '';
+  for (const [grp, scs] of Object.entries(groups)) {
+    const grpName  = NFS_GROUP_NAMES[grp] || grp;
+    const grpColor = IDFC_GROUP_COLORS[grp] || 'var(--text2)';
+    const okCnt    = scs.filter(s => s.is_ok).length;
+    const excCnt   = scs.length - okCnt;
+    const allSel   = scs.every(s => nfsSelectedIds.has(s.id));
+    html += `<div style="margin-bottom:5px;border:1px solid var(--border);border-radius:5px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface2);cursor:pointer"
+           onclick="toggleNFSCategoryExpand('${grp}')">
+        <input type="checkbox" id="nfs-cat-cb-${grp}" ${allSel ? 'checked' : ''}
+          onclick="event.stopPropagation();toggleNFSCategory('${grp}', this.checked)"
+          style="width:14px;height:14px;accent-color:var(--accent);cursor:pointer;flex-shrink:0">
+        <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:${grpColor};min-width:14px">${grp}</span>
+        <span style="font-size:11px;font-weight:600;color:var(--text);flex:1">${grpName}</span>
+        <span style="font-size:10px;color:var(--text3)">${scs.length}</span>
+        ${okCnt  ? `<span style="font-size:8px;padding:1px 4px;border-radius:3px;background:var(--green-bg);color:var(--green);border:1px solid #1a5c3a">${okCnt}OK</span>` : ''}
+        ${excCnt ? `<span style="font-size:8px;padding:1px 4px;border-radius:3px;background:var(--surface);color:var(--text3);border:1px solid var(--border)">${excCnt}EXC</span>` : ''}
+        <span id="nfs-cat-arr-${grp}" style="font-size:9px;color:var(--text3)">▼</span>
+      </div>
+      <div id="nfs-cat-sc-${grp}">
+        ${scs.map(sc => {
+          const chk = nfsSelectedIds.has(sc.id) ? 'checked' : '';
+          return `<div style="display:flex;align-items:center;gap:6px;padding:4px 10px 4px 30px;border-top:0.5px solid var(--border)">
+            <input type="checkbox" id="nfs-sc-cb-${sc.id}" ${chk}
+              onclick="toggleNFSSingle('${sc.id}', this.checked)"
+              style="width:13px;height:13px;accent-color:var(--accent);cursor:pointer;flex-shrink:0">
+            <span style="font-family:var(--mono);font-size:10px;font-weight:600;color:${grpColor};min-width:30px">${sc.code}</span>
+            <span style="font-size:11px;color:var(--text);flex:1;line-height:1.3">${sc.name}</span>
+            ${sc.is_ok
+              ? '<span style="font-size:8px;padding:1px 4px;border-radius:3px;background:var(--green-bg);color:var(--green);border:1px solid #1a5c3a">OK</span>'
+              : '<span style="font-size:8px;padding:1px 4px;border-radius:3px;background:var(--surface);color:var(--text3);border:1px solid var(--border)">EXC</span>'}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+  return html;
+}
+
+async function renderIDFCNFSContent() {
+  const mc = document.getElementById('main-content');
+  if (!nfsScenarios) {
+    const res = await fetch('/api/idfc-nfs-scenarios');
+    nfsScenarios = await res.json();
+    initNFSSelectedScenarios();
+  }
+
+  const fileCards = NFS_FILE_DEFS.map(f =>
+    `<div style="background:var(--surface2);border-radius:6px;padding:10px 12px;border:1px solid var(--border);text-align:center">
+      <div style="margin-bottom:5px"><span class="file-pill ${f.cls}" style="font-size:9px">${f.label}</span></div>
+      <div style="font-size:10px;color:var(--text2);line-height:1.4">${f.desc}</div>
+    </div>`
+  ).join('');
+
+  mc.innerHTML = `
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Output Files — 5 per run</div>
+        <div style="margin-left:auto;display:flex;gap:6px">
+          <span class="tag tag-network">NFS</span>
+          <span class="tag tag-channel">ATM</span>
+          <span class="tag tag-role">Bank as Acquirer</span>
+          <span class="tag" style="background:#0a1a30;color:#60a5fa;border:1px solid #1a3a6a">IDFC FIRST</span>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">${fileCards}</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">Generate Test Files</div></div>
+      <div class="panel-body">
+        <div id="nfs-error" class="error-box hidden"></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px">
+          <div class="form-group">
+            <div class="form-label">Bank</div>
+            <select class="form-input" id="nfs-bank-select" style="cursor:pointer">
+              ${NFS_ACQ_BANKS.map(b => `<option value="${b.id}">${b.name}</option>`).join('')}
+            </select>
+            <div class="form-hint">NFS acquirer bank</div>
+          </div>
+          <div class="form-group">
+            <div class="form-label">Transaction Date</div>
+            <input class="form-input" type="date" id="nfs-tran-date" value="${todayStr()}">
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px">
+          <div class="form-group">
+            <div class="form-label">Volume (groups)</div>
+            <input class="form-input" type="number" id="nfs-volume" value="1000" min="1" max="1000000" oninput="updateNFSOkNote()">
+            <div class="form-hint">Max 1,000,000 · 1 group = one scenario instance</div>
+          </div>
+          <div class="form-group">
+            <div class="form-label">Reconciled % target</div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:2px">
+              <input type="range" id="nfs-ok-pct" min="0" max="100" value="95" step="1"
+                style="flex:1;accent-color:var(--accent)" oninput="updateNFSOkNote()">
+              <span id="nfs-ok-pct-display" style="font-family:var(--mono);font-size:16px;color:var(--accent);min-width:42px">95%</span>
+            </div>
+            <div class="form-hint" id="nfs-ok-pct-note">~950 OK · ~50 exceptions at this volume</div>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:14px">
+          <div class="form-label">GL Account <span style="color:var(--text3);font-weight:400;font-size:11px">(optional)</span></div>
+          <input class="form-input" type="text" id="nfs-gl-accounts"
+            placeholder="e.g. 0000098094102017"
+            oninput="validateNFSGl()">
+          <div class="form-hint">ATM GL account — leave blank to use default · 8–16 digits</div>
+          <div id="nfs-gl-error" style="color:#e05252;font-size:12px;margin-top:4px;display:none"></div>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div class="form-label" style="margin:0">Custom Entries</div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <span id="nfs-custom-count" style="font-size:10px;color:var(--text3)">0 / 100 · 0 OK · 0 EXC</span>
+              <button onclick="clearAllNFSCustomScenarios()" style="font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">Clear all</button>
+            </div>
+          </div>
+          <div style="border:1px solid var(--border2);border-radius:6px;padding:10px 12px;background:var(--surface2)">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px">
+              ${[['cbs','CBS / FSS'],['sw','Switch (TLF)'],['nfs','NFS Interchange']].map(([pfx, label]) => {
+                const numStyle = 'width:40px;height:26px;font-size:12px;text-align:center;border:1px solid var(--border2);border-radius:4px;background:var(--bg);color:var(--text);font-family:var(--mono)';
+                const lblStyle = 'font-size:9px;color:var(--text3);text-align:center;margin-bottom:2px';
+                return `<div>
+                  <div style="font-size:10px;color:var(--text2);font-weight:500;margin-bottom:6px">${label}</div>
+                  <div style="display:flex;gap:6px;align-items:flex-end">
+                    <div><div style="${lblStyle}">Fwd</div><input id="ncs-${pfx}-fwd" type="number" min="0" max="9" value="1" style="${numStyle}"></div>
+                    <div><div style="${lblStyle}">Rev</div><input id="ncs-${pfx}-rev" type="number" min="0" max="9" value="0" style="${numStyle}"></div>
+                    <button id="ncs-${pfx}-null" data-active="0" onclick="toggleNFSFileNull('${pfx}')" style="height:26px;padding:0 8px;font-size:9px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">null</button>
+                  </div>
+                </div>`;
+              }).join('')}
+            </div>
+            <div style="margin-bottom:8px">
+              <button onclick="addNFSCustomScenario()" style="height:28px;padding:0 14px;font-size:11px;font-weight:600;border-radius:4px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer">+ Add</button>
+            </div>
+            <div id="nfs-custom-list"></div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div class="form-label" style="margin:0">Scenarios</div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <span id="nfs-sc-count-badge" style="font-size:10px;color:var(--text3)"></span>
+              <button onclick="selectAllNFSScenarios(true)"  style="font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer">All</button>
+              <button onclick="selectAllNFSScenarios(false)" style="font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer">None</button>
+            </div>
+          </div>
+          <div style="border:1px solid var(--border2);border-radius:6px;overflow:hidden">
+            <button onclick="toggleNFSSelector()" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--surface2);border:none;cursor:pointer;text-align:left">
+              <span id="nfs-scenario-summary" style="font-size:12px;color:var(--text)">All scenarios</span>
+              <span id="nfs-selector-arrow" style="font-size:10px;color:var(--text3)">▼ expand</span>
+            </button>
+            <div id="nfs-selector-panel" style="display:none;max-height:420px;overflow-y:auto;padding:8px;background:var(--bg)">
+              ${buildNFSSelectorHTML()}
+            </div>
+          </div>
+        </div>
+
+        <div class="actions-row">
+          <button class="btn btn-primary" id="nfs-generate-btn" onclick="runIDFCNFSGenerate()">
+            <span>Generate</span>
+          </button>
+          <span style="font-size:11px;color:var(--text3)">NFS · TLF · CBSMCW · FSSGL · BGL · manifest</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Test Cases Covered</div>
+        <div style="margin-left:auto;font-size:11px;color:var(--text3)" id="nfs-sc-count"></div>
+      </div>
+      <div class="panel-body" style="padding:0">
+        <div style="overflow-x:auto;max-height:520px;overflow-y:auto;">
+          <table class="sc-table">
+            <thead><tr><th>Code</th><th>Scenario</th><th>Files Present</th><th>Action</th><th></th></tr></thead>
+            <tbody id="nfs-sc-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="nfs-results-section" class="hidden">
+      <div class="success-banner">
+        <span id="nfs-success-text">✓ Files generated</span>
+        <button class="btn btn-green" id="nfs-download-btn">⬇ Download .zip</button>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">Generation Summary</div></div>
+        <div class="panel-body">
+          <div id="nfs-result-counts" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px"></div>
+          <div id="nfs-file-list" style="margin-bottom:16px"></div>
+          <div id="nfs-sc-result" style="overflow-x:auto;max-height:320px;overflow-y:auto"></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  renderNFSScenarioTable();
+  renderNFSCustomList();
+  updateNFSOkNote();
+  updateNFSScenarioSummary();
+}
+
+function toggleNFSSelector() {
+  nfsSelectorOpen = !nfsSelectorOpen;
+  const panel = document.getElementById('nfs-selector-panel');
+  const arrow = document.getElementById('nfs-selector-arrow');
+  if (panel) panel.style.display = nfsSelectorOpen ? 'block' : 'none';
+  if (arrow) arrow.textContent = nfsSelectorOpen ? '▲ collapse' : '▼ expand';
+}
+
+function renderNFSScenarioTable() {
+  if (!nfsScenarios) return;
+  const tbody = document.getElementById('nfs-sc-tbody');
+  const countEl = document.getElementById('nfs-sc-count');
+  if (!tbody) return;
+
+  const groups = nfsScenarios.groups || {};
+  let html = '';
+  let total = 0;
+  for (const [grp, scs] of Object.entries(groups)) {
+    const grpColor = IDFC_GROUP_COLORS[grp] || 'var(--text2)';
+    const grpName  = NFS_GROUP_NAMES[grp] || grp;
+    html += `<tr><td colspan="5" style="background:var(--bg);padding:5px 10px;border-top:1px solid var(--border2)">
+      <span style="font-family:var(--mono);font-size:10px;font-weight:600;color:${grpColor}">${grp}</span>
+      <span style="font-size:10px;color:var(--text2);margin-left:6px">${grpName}</span>
+    </td></tr>`;
+    for (const sc of scs) {
+      total++;
+      const fs = sc.file_states || {};
+      const pills = Object.keys(fs).map(k => {
+        const cls = k === 'nfs' ? 'pill-nfs' : k === 'tlf' ? 'pill-tlf' : 'pill-cbs2';
+        return `<span class="file-pill ${cls}" style="font-size:8px">${k.toUpperCase()}</span>`;
+      }).join(' ');
+      const okBadge = sc.is_ok
+        ? `<span style="font-size:9px;padding:1px 4px;border-radius:3px;background:var(--green-bg);color:var(--green);border:1px solid #1a5c3a">OK</span>`
+        : `<span style="font-size:9px;padding:1px 4px;border-radius:3px;background:var(--surface2);color:var(--text3);border:1px solid var(--border)">EXC</span>`;
+      html += `<tr>
+        <td style="font-family:var(--mono);font-size:10px;font-weight:600;color:${grpColor}">${sc.code}</td>
+        <td style="font-size:11px">${sc.name}</td>
+        <td>${pills}</td>
+        <td style="font-size:10px;color:var(--text2)">${sc.action||''}</td>
+        <td>${okBadge}</td>
+      </tr>`;
+    }
+  }
+  tbody.innerHTML = html;
+  if (countEl) countEl.textContent = `${total} scenarios`;
+}
+
+async function runIDFCNFSGenerate() {
+  const s = getNFSScenarioStats();
+  const errBox = document.getElementById('nfs-error');
+  errBox.classList.add('hidden');
+  if (s.selected === 0) {
+    errBox.textContent = '✗ No scenarios selected.';
+    errBox.classList.remove('hidden');
+    return;
+  }
+  const glResult = validateNFSGl();
+  if (!glResult.valid) {
+    errBox.textContent = '✗ GL Account: ' + glResult.error;
+    errBox.classList.remove('hidden');
+    return;
+  }
+  const btn = document.getElementById('nfs-generate-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div><span>Generating…</span>';
+
+  const volume    = parseInt(document.getElementById('nfs-volume').value);
+  const tranDate  = document.getElementById('nfs-tran-date').value;
+  const okPct     = parseFloat(document.getElementById('nfs-ok-pct')?.value || 95);
+  const bankId    = document.getElementById('nfs-bank-select')?.value || 'idfc';
+  const scenIds   = Array.from(nfsSelectedIds);
+
+  try {
+    const res = await fetch('/api/generate-idfc-nfs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        volume, tran_date: tranDate, bank_id: bankId, ok_pct: okPct,
+        selected_scenarios: scenIds, custom_scenarios: nfsCustomScenarios,
+        gl_accounts: glResult.gls,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'Generation failed');
+    nfsLastResult = data;
+    renderIDFCNFSResults(data);
+  } catch(e) {
+    errBox.textContent = '✗ ' + e.message;
+    errBox.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>Generate</span>';
+  }
+}
+
+function renderIDFCNFSResults(data) {
+  document.getElementById('nfs-results-section').classList.remove('hidden');
+  const counts = data.counts || {};
+  const rs     = data.recon_summary || {};
+  const excBrk = rs.exception_breakdown || {};
+  const pct    = rs.ok_pct || 0;
+
+  document.getElementById('nfs-success-text').textContent =
+    `✓ ${counts.total_groups||0} groups — ${pct}% reconciled (${rs.ok_count||0} OK · ${rs.exception_count||0} exceptions)`;
+
+  document.getElementById('nfs-download-btn').onclick = () =>
+    window.location.href = `/api/download-idfc-nfs/${data.run_id}`;
+
+  document.getElementById('nfs-result-counts').innerHTML = `
+    <div class="result-card"><div class="result-card-label" style="color:var(--green)">Total Groups</div><div class="result-card-value" style="color:var(--green)">${counts.total_groups||0}</div><div style="font-size:10px;color:var(--text3);margin-top:4px">${pct}% reconciled</div></div>
+    <div class="result-card"><div class="result-card-label" style="color:var(--green)">Reconciled</div><div class="result-card-value" style="color:var(--green)">${rs.ok_count||0}</div></div>
+    <div class="result-card"><div class="result-card-label" style="color:var(--red)">Exceptions</div><div class="result-card-value" style="color:var(--red)">${rs.exception_count||0}</div></div>
+    <div class="result-card"><div class="result-card-label" style="color:var(--accent)">NFS rows</div><div class="result-card-value" style="color:var(--accent)">${counts.nfs_rows||0}</div></div>
+  `;
+
+  const files  = data.files  || {};
+  const errors = data.errors || {};
+  const fileHtml = NFS_FILE_DEFS.map(fd => {
+    const fname = files[fd.id];
+    const err   = errors[fd.id];
+    if (err) return `<div style="background:var(--red-bg);border:1px solid #5c2020;border-radius:5px;padding:6px 10px;font-size:10px">
+      <span class="file-pill ${fd.cls}" style="font-size:8px">${fd.label}</span>
+      <span style="color:var(--red);margin-left:6px">✗ ${err}</span>
+    </div>`;
+    return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:6px 10px;font-size:10px;display:flex;align-items:center;gap:8px">
+      <span class="file-pill ${fd.cls}" style="font-size:8px">${fd.label}</span>
+      <span style="color:var(--text2);font-family:var(--mono);font-size:10px;flex:1">${fname||'—'}</span>
+      ${fname ? `<span style="color:var(--green);font-size:10px">✓</span>` : ''}
+    </div>`;
+  }).join('');
+  document.getElementById('nfs-file-list').innerHTML = `
+    <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Generated Files</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${fileHtml}</div>`;
+
+  const scenarios = data.scenarios || [];
+  const byGroup = {};
+  scenarios.forEach(sc => { const g = sc.group||'?'; if (!byGroup[g]) byGroup[g]=[]; byGroup[g].push(sc); });
+  let scHtml = `<div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Scenario Breakdown</div>
+    <table class="sc-table"><thead><tr>
+      <th>Code</th><th>Scenario</th><th>Action</th><th style="text-align:right">Groups</th><th></th>
+    </tr></thead><tbody>`;
+  for (const [grp, scs] of Object.entries(byGroup)) {
+    const grpColor = IDFC_GROUP_COLORS[grp] || 'var(--text2)';
+    const grpName  = NFS_GROUP_NAMES[grp] || grp;
+    scHtml += `<tr><td colspan="5" style="background:var(--bg);padding:5px 10px;border-top:1px solid var(--border2)">
+      <span style="font-family:var(--mono);font-size:10px;font-weight:600;color:${grpColor}">${grp}</span>
+      <span style="font-size:10px;color:var(--text2);margin-left:6px">${grpName}</span>
+    </td></tr>`;
+    scs.forEach(sc => {
+      const okBadge = sc.is_ok
+        ? `<span style="font-size:9px;padding:1px 4px;border-radius:3px;background:var(--green-bg);color:var(--green);border:1px solid #1a5c3a">OK</span>`
+        : `<span style="font-size:9px;padding:1px 4px;border-radius:3px;background:var(--surface2);color:var(--text3);border:1px solid var(--border)">EXC</span>`;
+      scHtml += `<tr>
+        <td style="font-family:var(--mono);font-size:10px;font-weight:600;color:${grpColor}">${sc.code||''}</td>
+        <td style="font-size:11px;color:var(--text)">${sc.name}</td>
+        <td style="font-size:10px;color:var(--text2)">${sc.action||''}</td>
+        <td style="text-align:right;font-family:var(--mono)">${sc.count}</td>
+        <td>${okBadge}</td>
+      </tr>`;
+    });
+  }
+  scHtml += '</tbody></table>';
+  document.getElementById('nfs-sc-result').innerHTML = scHtml;
+  document.getElementById('nfs-results-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ─────────────────────────────────────────────
+// IDFC MASTERCARD ISSUER VIEW
+// ─────────────────────────────────────────────
+const MC_FILE_DEFS = [
+  { id: 't112',   label: 'T112',   cls: 'pill-nfs',    desc: 'MC Network Clearing (MTI=1240)' },
+  { id: 'ptlf',   label: 'PTLF',   cls: 'pill-switch', desc: 'Switch POS Log (MDUI)' },
+  { id: 'cbsmcw', label: 'CBSMCW', cls: 'pill-cbs',    desc: 'CBS Card File (MDS)' },
+  { id: 'fssgl',  label: 'FSSGL',  cls: 'pill-cbs',    desc: 'CBS GL Settlement' },
+];
+
+const MC_GROUP_NAMES = {
+  A: 'Perfect Match',
+  B: 'Full Reversal',
+  I: 'Amount Mismatch',
+  J: 'Date Mismatch',
+  K: 'Duplicate',
+  L: 'Missing Files',
+  M: 'Crossfire / Direction',
+  N: 'Reversal Variants',
+  CUSTOM: 'Custom',
+};
+
+let mcAllScenarios = {};
+let mcSelectedScenarios = new Set();
+
+async function renderIDFCMCContent() {
+  const mc = document.getElementById('main-content');
+  const res = await fetch('/api/idfc-mc-scenarios');
+  const data = await res.json();
+  mcAllScenarios = data.groups || {};
+  mcSelectedScenarios = new Set(Object.values(mcAllScenarios).flat().map(s => s.id));
+
+  const fileCards = MC_FILE_DEFS.map(f =>
+    `<div style="background:var(--surface2);border-radius:6px;padding:14px;border:1px solid var(--border)">
+      <div style="margin-bottom:8px"><span class="tag ${f.cls}" style="font-size:10px">${f.label}</span></div>
+      <div style="font-size:13px;font-weight:500;margin-bottom:4px">${f.label}</div>
+      <div style="font-size:11px;color:var(--text2);line-height:1.5">${f.desc}</div>
+    </div>`
+  ).join('');
+
+  mc.innerHTML = `
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Participant Files</div>
+        <div style="margin-left:auto;display:flex;gap:6px">
+          <span class="tag tag-network">Mastercard</span>
+          <span class="tag tag-channel">POS</span>
+          <span class="tag tag-role">Bank as Issuer</span>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">${fileCards}</div>
+        <div style="margin-top:12px;padding:10px 12px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);font-size:11px;color:var(--text2)">
+          <b style="color:var(--text)">Matching keys:</b>
+          CBS↔Switch: Card(F6+L3) + Auth + RRN &nbsp;|&nbsp;
+          CBS↔T112: Card(F6+L3) + Auth + Terminal ID &nbsp;|&nbsp;
+          Switch↔T112: Card(F6+L3) + Auth + Terminal ID
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">Generate Test Files</div></div>
+      <div class="panel-body">
+        <div id="mc-generate-error" class="error-box hidden"></div>
+        <div class="form-grid" style="margin-bottom:18px">
+          <div class="form-group">
+            <div class="form-label">Transaction Date</div>
+            <input class="form-input" type="date" id="mc-tran-date" value="${todayStr()}">
+          </div>
+          <div class="form-group">
+            <div class="form-label">Number of transactions</div>
+            <input class="form-input" type="number" id="mc-volume" value="500" min="1" max="1000000" oninput="updateMCOkNote()">
+          </div>
+          <div class="form-group">
+            <div class="form-label">Reconciled % target</div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:2px">
+              <input type="range" id="mc-ok-pct" min="0" max="100" value="95" step="1"
+                style="flex:1;accent-color:var(--accent)" oninput="updateMCOkNote()">
+              <span id="mc-ok-pct-val" style="font-family:var(--mono);font-size:13px;min-width:36px">95%</span>
+            </div>
+            <div class="form-hint" id="mc-ok-note"></div>
+          </div>
+          <div class="form-group">
+            <div class="form-label">GL Accounts (optional override)</div>
+            <input class="form-input" type="text" id="mc-gl-dom" placeholder="DOM POS GL (e.g. 96794102017)" oninput="validateMCGl()">
+            <input class="form-input" type="text" id="mc-gl-int" placeholder="INT POS GL (e.g. 96800102012)" style="margin-top:6px" oninput="validateMCGl()">
+            <div class="form-hint" id="mc-gl-hint" style="color:var(--text2)">Leave blank to use config defaults</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none">
+            <input type="checkbox" id="mc-no-dup-cbsmcw" checked
+              style="width:14px;height:14px;accent-color:var(--accent);cursor:pointer;flex-shrink:0">
+            <span style="font-size:12px;color:var(--text2)">No duplicate rows in CBSMCW</span>
+          </label>
+          <span style="font-size:10px;color:var(--text3)">(uncheck to allow intentional duplicate test cases)</span>
+        </div>
+        <button class="btn btn-primary" id="mc-generate-btn" onclick="runIDFCMCGenerate()">
+          <span>Generate</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Scenarios</div>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+          <span style="font-size:11px;color:var(--text2)">${data.total} scenarios</span>
+          <button class="btn btn-ghost" style="font-size:11px;padding:3px 10px" onclick="mcSelectAll()">All</button>
+          <button class="btn btn-ghost" style="font-size:11px;padding:3px 10px" onclick="mcSelectNone()">None</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div id="mc-scenario-table"></div>
+      </div>
+    </div>
+
+    <div class="panel hidden" id="mc-results-section">
+      <div class="panel-header">
+        <div class="panel-title">Results</div>
+        <button class="btn btn-primary" style="margin-left:auto" id="mc-download-btn">Download ZIP</button>
+      </div>
+      <div class="panel-body">
+        <div id="mc-success-text" style="color:var(--green);font-size:13px;font-weight:500;margin-bottom:12px"></div>
+        <div id="mc-result-counts" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px"></div>
+        <div id="mc-file-list" style="margin-bottom:16px"></div>
+        <div id="mc-sc-result"></div>
+      </div>
+    </div>
+  `;
+
+  renderMCScenarioTable();
+  updateMCOkNote();
+}
+
+function updateMCOkNote() {
+  const vol = parseInt(document.getElementById('mc-volume')?.value || 500);
+  const pct = parseInt(document.getElementById('mc-ok-pct')?.value || 95);
+  const el  = document.getElementById('mc-ok-pct-val');
+  const note = document.getElementById('mc-ok-note');
+  if (el) el.textContent = pct + '%';
+  if (note) {
+    const ok  = Math.round(vol * pct / 100);
+    const exc = vol - ok;
+    note.textContent = `~${ok} reconciled · ~${exc} exceptions`;
+  }
+}
+
+function validateMCGl() {
+  const gl1 = document.getElementById('mc-gl-dom')?.value.trim() || '';
+  const gl2 = document.getElementById('mc-gl-int')?.value.trim() || '';
+  const hint = document.getElementById('mc-gl-hint');
+  if (!hint) return { ok: true };
+  const gls = [gl1, gl2].filter(g => g);
+  for (const g of gls) {
+    if (!/^\d{8,16}$/.test(g)) {
+      hint.textContent = `GL "${g}" must be 8–16 digits`;
+      hint.style.color = 'var(--red)';
+      return { ok: false };
+    }
+  }
+  hint.textContent = gls.length ? 'GL accounts validated ✓' : 'Leave blank to use config defaults';
+  hint.style.color = gls.length ? 'var(--green)' : 'var(--text2)';
+  return { ok: true };
+}
+
+function mcSelectAll() {
+  mcSelectedScenarios = new Set(Object.values(mcAllScenarios).flat().map(s => s.id));
+  renderMCScenarioTable();
+}
+function mcSelectNone() {
+  mcSelectedScenarios.clear();
+  renderMCScenarioTable();
+}
+
+function renderMCScenarioTable() {
+  const container = document.getElementById('mc-scenario-table');
+  if (!container) return;
+  let html = `<table class="sc-table"><thead><tr>
+    <th style="width:32px"></th><th>Code</th><th>Scenario</th><th>Category</th><th>Action</th><th></th>
+  </tr></thead><tbody>`;
+  for (const [grp, scs] of Object.entries(mcAllScenarios)) {
+    const grpColor = IDFC_GROUP_COLORS[grp] || 'var(--accent)';
+    const grpName  = MC_GROUP_NAMES[grp] || grp;
+    html += `<tr><td colspan="6" style="background:var(--bg);padding:5px 10px;border-top:1px solid var(--border2)">
+      <span style="font-family:var(--mono);font-size:10px;font-weight:600;color:${grpColor}">${grp}</span>
+      <span style="font-size:10px;color:var(--text2);margin-left:6px">${grpName}</span>
+    </td></tr>`;
+    scs.forEach(sc => {
+      const checked = mcSelectedScenarios.has(sc.id);
+      const okBadge = sc.is_ok
+        ? `<span style="font-size:9px;padding:1px 4px;border-radius:3px;background:var(--green-bg);color:var(--green);border:1px solid #1a5c3a">OK</span>`
+        : `<span style="font-size:9px;padding:1px 4px;border-radius:3px;background:var(--surface2);color:var(--text3);border:1px solid var(--border)">EXC</span>`;
+      const cat = sc.tran_category === 'I' ? 'INT' : 'DOM';
+      html += `<tr>
+        <td><input type="checkbox" ${checked ? 'checked' : ''} onchange="mcToggle('${sc.id}',this.checked)"></td>
+        <td style="font-family:var(--mono);font-size:10px;font-weight:600;color:${grpColor}">${sc.code||''}</td>
+        <td style="font-size:11px;color:var(--text)">${sc.name}</td>
+        <td style="font-size:10px;color:var(--text2)">${cat}</td>
+        <td style="font-size:10px;color:var(--text2)">${sc.action||''}</td>
+        <td>${okBadge}</td>
+      </tr>`;
+    });
+  }
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+function mcToggle(id, checked) {
+  if (checked) mcSelectedScenarios.add(id);
+  else mcSelectedScenarios.delete(id);
+}
+
+async function runIDFCMCGenerate() {
+  const btn = document.getElementById('mc-generate-btn');
+  const errBox = document.getElementById('mc-generate-error');
+  errBox.classList.add('hidden');
+
+  const glRes = validateMCGl();
+  if (!glRes.ok) return;
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span><span>Generating…</span>';
+
+  const gl1 = document.getElementById('mc-gl-dom')?.value.trim() || '';
+  const gl2 = document.getElementById('mc-gl-int')?.value.trim() || '';
+  const glAccounts = [gl1, gl2].filter(g => g);
+
+  try {
+    const res = await fetch('/api/generate-idfc-mc', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        volume: parseInt(document.getElementById('mc-volume').value),
+        tran_date: document.getElementById('mc-tran-date').value,
+        ok_pct: parseFloat(document.getElementById('mc-ok-pct').value),
+        selected_scenarios: mcSelectedScenarios.size > 0 ? [...mcSelectedScenarios] : null,
+        gl_accounts: glAccounts,
+        no_cbsmcw_duplicates: document.getElementById('mc-no-dup-cbsmcw')?.checked !== false,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'Generation failed');
+    renderIDFCMCResults(data);
+  } catch (e) {
+    errBox.textContent = e.message;
+    errBox.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>Generate</span>';
+  }
+}
+
+function renderIDFCMCResults(data) {
+  document.getElementById('mc-results-section').classList.remove('hidden');
+  const counts = data.counts || {};
+  const rs     = data.recon_summary || {};
+  const pct    = rs.ok_pct || 0;
+
+  document.getElementById('mc-success-text').textContent =
+    `✓ ${counts.total_groups||0} groups — ${pct}% reconciled (${rs.ok_count||0} OK · ${rs.exception_count||0} exceptions)`;
+
+  document.getElementById('mc-download-btn').onclick = () =>
+    window.location.href = `/api/download-idfc-mc/${data.run_id}`;
+
+  document.getElementById('mc-result-counts').innerHTML = `
+    <div class="result-card"><div class="result-card-label" style="color:var(--green)">Total Groups</div><div class="result-card-value" style="color:var(--green)">${counts.total_groups||0}</div><div style="font-size:10px;color:var(--text3);margin-top:4px">${pct}% reconciled</div></div>
+    <div class="result-card"><div class="result-card-label" style="color:var(--green)">Reconciled</div><div class="result-card-value" style="color:var(--green)">${rs.ok_count||0}</div></div>
+    <div class="result-card"><div class="result-card-label" style="color:var(--red)">Exceptions</div><div class="result-card-value" style="color:var(--red)">${rs.exception_count||0}</div></div>
+    <div class="result-card"><div class="result-card-label" style="color:var(--accent)">POS Groups</div><div class="result-card-value" style="color:var(--accent)">${counts.pos||0}</div></div>
+  `;
+
+  const files  = data.files  || {};
+  const errors = data.errors || {};
+  const fileHtml = MC_FILE_DEFS.map(fd => {
+    const fname = files[fd.id];
+    const err   = errors[fd.id];
+    if (err) return `<div style="background:var(--red-bg);border:1px solid #5c2020;border-radius:5px;padding:6px 10px;font-size:10px">
+      <span class="file-pill ${fd.cls}" style="font-size:8px">${fd.label}</span>
+      <span style="color:var(--red);margin-left:6px">✗ ${err}</span></div>`;
+    return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:6px 10px;font-size:10px;display:flex;align-items:center;gap:8px">
+      <span class="file-pill ${fd.cls}" style="font-size:8px">${fd.label}</span>
+      <span style="color:var(--text2);font-family:var(--mono);font-size:10px;flex:1">${fname||'—'}</span>
+      ${fname ? `<span style="color:var(--green);font-size:10px">✓</span>` : ''}
+    </div>`;
+  }).join('');
+  document.getElementById('mc-file-list').innerHTML = `
+    <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Generated Files</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${fileHtml}</div>`;
+
+  const scenarios = data.scenarios || [];
+  const byGroup = {};
+  scenarios.forEach(sc => { const g = sc.group||'?'; if (!byGroup[g]) byGroup[g]=[]; byGroup[g].push(sc); });
+  let scHtml = `<div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Scenario Breakdown</div>
+    <table class="sc-table"><thead><tr>
+      <th>Code</th><th>Scenario</th><th>Action</th><th style="text-align:right">Groups</th><th></th>
+    </tr></thead><tbody>`;
+  for (const [grp, scs] of Object.entries(byGroup)) {
+    const grpColor = IDFC_GROUP_COLORS[grp] || 'var(--accent)';
+    const grpName  = MC_GROUP_NAMES[grp] || grp;
+    scHtml += `<tr><td colspan="5" style="background:var(--bg);padding:5px 10px;border-top:1px solid var(--border2)">
+      <span style="font-family:var(--mono);font-size:10px;font-weight:600;color:${grpColor}">${grp}</span>
+      <span style="font-size:10px;color:var(--text2);margin-left:6px">${grpName}</span>
+    </td></tr>`;
+    scs.forEach(sc => {
+      const okBadge = sc.is_ok
+        ? `<span style="font-size:9px;padding:1px 4px;border-radius:3px;background:var(--green-bg);color:var(--green);border:1px solid #1a5c3a">OK</span>`
+        : `<span style="font-size:9px;padding:1px 4px;border-radius:3px;background:var(--surface2);color:var(--text3);border:1px solid var(--border)">EXC</span>`;
+      scHtml += `<tr>
+        <td style="font-family:var(--mono);font-size:10px;font-weight:600;color:${grpColor}">${sc.code||''}</td>
+        <td style="font-size:11px;color:var(--text)">${sc.name}</td>
+        <td style="font-size:10px;color:var(--text2)">${sc.action||''}</td>
+        <td style="text-align:right;font-family:var(--mono)">${sc.count}</td>
+        <td>${okBadge}</td>
+      </tr>`;
+    });
+  }
+  scHtml += '</tbody></table>';
+  document.getElementById('mc-sc-result').innerHTML = scHtml;
+  document.getElementById('mc-results-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ─────────────────────────────────────────────
+// MATRIX VIEW
+// ─────────────────────────────────────────────
+const CASES = [
+  [1,1,1,1,"OK",true],[2,1,1,-1,"CBS reversal — recover from customer",false],
+  [3,1,1,0,"CBS net zero — recover from customer",false],[4,1,1,null,"CBS missing — wait, then recover",false],
+  [5,1,-1,1,"OK",true],[6,1,-1,-1,"CBS reversal — recover from customer",false],
+  [7,1,-1,0,"CBS net zero — recover from customer",false],[8,1,-1,null,"CBS missing — wait, then recover",false],
+  [9,1,0,1,"OK",true],[10,1,0,-1,"CBS reversal — recover from customer",false],
+  [11,1,0,0,"CBS net zero — recover from customer",false],[12,1,0,null,"CBS missing — wait, then recover",false],
+  [13,1,null,1,"OK",true],[14,1,null,-1,"CBS reversal — recover from customer",false],
+  [15,1,null,0,"CBS net zero — recover from customer",false],[16,1,null,null,"NFS only — wait, then recover",false],
+  [17,-1,1,1,"NFS reversal, CBS debit — refund customer",false],[18,-1,1,-1,"OK",true],
+  [19,-1,1,0,"CBS net zero — refund customer",false],[20,-1,1,null,"CBS missing — wait, then refund",false],
+  [21,-1,-1,1,"NFS+Switch reversal, CBS debit — refund",false],[22,-1,-1,-1,"OK",true],
+  [23,-1,-1,0,"CBS net zero — refund customer",false],[24,-1,-1,null,"CBS missing — wait, then refund",false],
+  [25,-1,0,1,"NFS reversal, CBS debit — refund",false],[26,-1,0,-1,"OK",true],
+  [27,-1,0,0,"CBS net zero — refund customer",false],[28,-1,0,null,"CBS missing — wait, then refund",false],
+  [29,-1,null,1,"NFS reversal, CBS debit — refund",false],[30,-1,null,-1,"OK",true],
+  [31,-1,null,0,"CBS net zero — refund customer",false],[32,-1,null,null,"NFS reversal only — wait, then refund",false],
+  [33,0,1,1,"NFS net zero, CBS debit — refund",false],[34,0,1,-1,"NFS net zero, CBS credit — recover",false],
+  [35,0,1,0,"OK",true],[36,0,1,null,"NFS net zero, CBS missing — wait",false],
+  [37,0,-1,1,"NFS net zero, CBS debit — refund",false],[38,0,-1,-1,"NFS net zero, CBS credit — recover",false],
+  [39,0,-1,0,"OK",true],[40,0,-1,null,"NFS net zero, CBS missing — wait",false],
+  [41,0,0,1,"All balanced but CBS debit — refund",false],[42,0,0,-1,"All balanced but CBS credit — recover",false],
+  [43,0,0,0,"OK",true],[44,0,0,null,"CBS missing — wait",false],
+  [45,0,null,1,"NFS net zero, CBS debit — refund",false],[46,0,null,-1,"NFS net zero, CBS credit — recover",false],
+  [47,0,null,0,"OK",true],[48,0,null,null,"NFS net zero — wait",false],
+  [49,null,1,1,"NFS missing — wait, then refund",false],[50,null,1,-1,"NFS missing — wait, then recover",false],
+  [51,null,1,0,"NFS missing — wait",false],[52,null,1,null,"Switch only — OK",true],
+  [53,null,-1,1,"NFS missing — wait, then refund",false],[54,null,-1,-1,"NFS missing — wait, then recover",false],
+  [55,null,-1,0,"NFS missing — wait",false],[56,null,-1,null,"Switch reversal only — OK",true],
+  [57,null,0,1,"NFS missing — wait, then refund",false],[58,null,0,-1,"NFS missing — wait, then recover",false],
+  [59,null,0,0,"NFS missing — wait",false],[60,null,0,null,"Switch net zero — OK",true],
+  [61,null,null,1,"CBS debit only — wait, then refund",false],[62,null,null,-1,"CBS credit only — wait, then recover",false],
+  [63,null,null,0,"CBS net zero only — wait",false],[64,null,null,null,"All missing — OK",true],
+];
+
+let matrixResult = null;
+
+function showMatrixView() {
+  selectedUC = null;
+  document.querySelectorAll('.uc-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('topbar-title').textContent = '64-Case Matrix Generator';
+  document.getElementById('topbar-sub').textContent = 'Generate files covering all 64 NFS×Switch×CBS reconciliation combinations';
+  document.getElementById('topbar-status').innerHTML = '<span class="status-chip status-active">⊞ MATRIX</span>';
+  renderMatrixContent();
+}
+
+function valChip(v) {
+  if (v === null) return `<span style="font-family:var(--mono);font-size:10px;padding:2px 5px;border-radius:3px;background:var(--surface);color:var(--text3);border:1px solid var(--border)">null</span>`;
+  const cfg = {1:['#0a2318','#34d399','#1a5c3a'], [-1]:['#230a0a','#f87171','#5c2020'], 0:['#1a1030','#a78bfa','#2d1e54']};
+  const [bg,fg,br] = cfg[v] || ['#1a1030','#a78bfa','#2d1e54'];
+  const label = v===1?'+1':v===-1?'−1':'0';
+  return `<span style="font-family:var(--mono);font-size:10px;padding:2px 6px;border-radius:3px;background:${bg};color:${fg};border:1px solid ${br};font-weight:600">${label}</span>`;
+}
+
+function renderMatrixContent() {
+  const mc = document.getElementById('main-content');
+
+  // Build case table rows
+  const okCount = CASES.filter(c=>c[5]).length;
+  const rows = CASES.map(c => {
+    const [cid,nv,sv,cv,action,isOk] = c;
+    const okBadge = isOk
+      ? `<span style="font-size:9px;padding:2px 5px;border-radius:3px;background:var(--green-bg);color:var(--green);border:1px solid #1a5c3a">OK</span>`
+      : `<span style="font-size:9px;padding:2px 5px;border-radius:3px;background:var(--surface2);color:var(--text3);border:1px solid var(--border)">EXCEPTION</span>`;
+    return `<tr style="border-bottom:0.5px solid var(--border);">
+      <td style="padding:5px 10px;font-family:var(--mono);font-size:11px;color:var(--text3)">${cid}</td>
+      <td style="padding:5px 8px;text-align:center">${valChip(nv)}</td>
+      <td style="padding:5px 8px;text-align:center">${valChip(sv)}</td>
+      <td style="padding:5px 8px;text-align:center">${valChip(cv)}</td>
+      <td style="padding:5px 10px;font-size:11px;color:var(--text2)">${action}</td>
+      <td style="padding:5px 8px;text-align:right">${okBadge}</td>
+    </tr>`;
+  }).join('');
+
+  mc.innerHTML = `
+    <!-- LEGEND -->
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">Value Semantics</div></div>
+      <div class="panel-body">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+          ${[['NFS','bank debited by NFS','NFS credits bank (reversal)','net zero in NFS'],
+             ['Switch','txn approved/forwarded','reversal forwarded','original+rev both present'],
+             ['CBS','customer debited','customer credited (refund)','original+rev net zero']].map(([file,p1,m1,z1])=>`
+          <div style="background:var(--surface2);border-radius:6px;padding:12px 14px;border:1px solid var(--border)">
+            <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${file}</div>
+            <div style="font-size:11px;color:var(--text2);display:flex;gap:6px;align-items:center;margin-bottom:4px">${valChip(1)} ${p1}</div>
+            <div style="font-size:11px;color:var(--text2);display:flex;gap:6px;align-items:center;margin-bottom:4px">${valChip(-1)} ${m1}</div>
+            <div style="font-size:11px;color:var(--text2);display:flex;gap:6px;align-items:center;margin-bottom:4px">${valChip(0)} ${z1}</div>
+            <div style="font-size:11px;color:var(--text2);display:flex;gap:6px;align-items:center">${valChip(null)} no entry in file</div>
+          </div>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- GENERATE FORM -->
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">Generate Matrix Test Files</div></div>
+      <div class="panel-body">
+        <div id="matrix-error" class="error-box hidden"></div>
+        <div class="form-grid" style="margin-bottom:18px;">
+          <div class="form-group">
+            <div class="form-label">Transaction Date</div>
+            <input class="form-input" type="date" id="m-tran-date" value="${todayStr()}">
+          </div>
+          <div class="form-group">
+            <div class="form-label">Volume (min 64)</div>
+            <input class="form-input" type="number" id="m-volume" value="500" min="64" max="50000">
+            <div class="form-hint">All 64 cases guaranteed. Remainder fills proportionally.</div>
+          </div>
+          <div class="form-group">
+            <div class="form-label">Reconciled % (OK cases)</div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:2px;">
+              <input type="range" id="m-ok-pct" min="0" max="100" value="99" step="1"
+                style="flex:1;accent-color:var(--accent)" oninput="document.getElementById('m-ok-display').textContent=this.value+'%'">
+              <span id="m-ok-display" style="font-family:var(--mono);font-size:15px;color:var(--accent);min-width:42px">99%</span>
+            </div>
+            <div class="form-hint">Remaining ${100-99}% spread across 48 exception cases</div>
+          </div>
+        </div>
+        <div class="actions-row">
+          <button class="btn btn-primary" id="m-generate-btn" onclick="runMatrixGenerate()">
+            Generate Matrix Files
+          </button>
+          <span style="font-size:11px;color:var(--text3)">Outputs 3 files + manifest covering all 64 cases</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 64-CASE TABLE -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">All 64 Cases</div>
+        <div style="margin-left:auto;font-size:11px;color:var(--text3)">${okCount} OK · ${64-okCount} Exception · each guaranteed ≥1 row</div>
+      </div>
+      <div class="panel-body" style="padding:0">
+        <div style="overflow-x:auto;max-height:420px;overflow-y:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead style="position:sticky;top:0;background:var(--surface);z-index:2">
+              <tr>
+                <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;border-bottom:1px solid var(--border2)">#</th>
+                <th style="padding:8px 8px;text-align:center;font-size:10px;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;font-weight:600;border-bottom:1px solid var(--border2)">NFS</th>
+                <th style="padding:8px 8px;text-align:center;font-size:10px;color:var(--purple);text-transform:uppercase;letter-spacing:.06em;font-weight:600;border-bottom:1px solid var(--border2)">Switch</th>
+                <th style="padding:8px 8px;text-align:center;font-size:10px;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;font-weight:600;border-bottom:1px solid var(--border2)">CBS</th>
+                <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;border-bottom:1px solid var(--border2)">Action</th>
+                <th style="padding:8px 8px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;border-bottom:1px solid var(--border2)"></th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="matrix-results" class="hidden">
+      <div id="matrix-success" class="success-banner">
+        <span id="matrix-success-text">✓ Generated</span>
+        <button class="btn btn-green" id="matrix-download-btn">⬇ Download .zip</button>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">Coverage Summary</div></div>
+        <div class="panel-body">
+          <div id="matrix-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;"></div>
+          <div id="matrix-case-dist" style="overflow-x:auto;max-height:360px;overflow-y:auto;"></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function runMatrixGenerate() {
+  const btn = document.getElementById('m-generate-btn');
+  const errBox = document.getElementById('matrix-error');
+  errBox.classList.add('hidden');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div><span>Generating…</span>';
+
+  const volume  = parseInt(document.getElementById('m-volume').value);
+  const okPct   = parseFloat(document.getElementById('m-ok-pct').value);
+  const tranDate = document.getElementById('m-tran-date').value;
+
+  try {
+    const res = await fetch('/api/generate-matrix', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ volume, ok_pct: okPct, tran_date: tranDate }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'Generation failed');
+    matrixResult = data;
+    renderMatrixResults(data);
+  } catch(e) {
+    errBox.textContent = '✗ ' + e.message;
+    errBox.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Generate Matrix Files';
+  }
+}
+
+function renderMatrixResults(data) {
+  document.getElementById('matrix-results').classList.remove('hidden');
+  document.getElementById('matrix-success-text').textContent =
+    `✓ Generated — ${data.ok_pct_actual}% reconciled (${data.ok_groups} OK groups, ${data.non_ok_groups} exceptions)`;
+  document.getElementById('matrix-download-btn').onclick = () => {
+    window.location.href = `/api/download-matrix/${data.run_id}`;
+  };
+
+  // Stats cards
+  const rc = data.row_counts || {};
+  document.getElementById('matrix-stats').innerHTML = `
+    <div class="result-card"><div class="result-card-label" style="color:var(--green)">OK Groups</div><div class="result-card-value" style="color:var(--green)">${data.ok_groups}</div></div>
+    <div class="result-card"><div class="result-card-label" style="color:var(--red)">Exception Groups</div><div class="result-card-value" style="color:var(--red)">${data.non_ok_groups}</div></div>
+    <div class="result-card"><div class="result-card-label" style="color:var(--amber)">CBS Rows</div><div class="result-card-value" style="color:var(--amber)">${rc.cbs||0}</div></div>
+    <div class="result-card"><div class="result-card-label" style="color:var(--accent)">NFS Rows</div><div class="result-card-value" style="color:var(--accent)">${rc.nfs||0}</div></div>
+  `;
+
+  // Case distribution table
+  const dist = data.case_distribution || {};
+  let th = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
+    <thead><tr style="border-bottom:1px solid var(--border2)">
+      <th style="padding:6px 8px;text-align:left;color:var(--text3);font-size:10px;text-transform:uppercase">#</th>
+      <th style="padding:6px 6px;text-align:center;color:var(--amber);font-size:10px;text-transform:uppercase">NFS</th>
+      <th style="padding:6px 6px;text-align:center;color:var(--purple);font-size:10px;text-transform:uppercase">Switch</th>
+      <th style="padding:6px 6px;text-align:center;color:var(--accent);font-size:10px;text-transform:uppercase">CBS</th>
+      <th style="padding:6px 8px;text-align:left;color:var(--text3);font-size:10px;text-transform:uppercase">Action</th>
+      <th style="padding:6px 8px;text-align:right;color:var(--text3);font-size:10px;text-transform:uppercase">Count</th>
+    </tr></thead><tbody>`;
+  Object.values(dist).forEach(c => {
+    const ok = c.is_ok ? `<span style="color:var(--green);font-size:10px">✓</span>` : '';
+    th += `<tr style="border-bottom:0.5px solid var(--border)">
+      <td style="padding:5px 8px;font-family:var(--mono);color:var(--text3)">${ok} ${c.case_id}</td>
+      <td style="padding:5px 6px;text-align:center">${valChip(c.nfs)}</td>
+      <td style="padding:5px 6px;text-align:center">${valChip(c.switch)}</td>
+      <td style="padding:5px 6px;text-align:center">${valChip(c.cbs)}</td>
+      <td style="padding:5px 8px;color:var(--text2)">${c.action}</td>
+      <td style="padding:5px 8px;text-align:right;font-family:var(--mono);color:var(--text)">${c.count}</td>
+    </tr>`;
+  });
+  th += '</tbody></table>';
+  document.getElementById('matrix-case-dist').innerHTML = th;
+  document.getElementById('matrix-results').scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+</body>
+</html>

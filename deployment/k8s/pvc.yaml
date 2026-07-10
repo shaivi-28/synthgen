@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: synthgen-output-pvc
+  namespace: synthgen
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: gp3-xfs
+  resources:
+    requests:
+      storage: 2Gi

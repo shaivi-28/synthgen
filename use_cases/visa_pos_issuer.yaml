@@ -1,0 +1,748 @@
+id: visa_pos_issuer
+name: "VISA POS + Cash — Bank as Issuer"
+description: "Customer uses a VISA card at a POS terminal or ATM. Bank is the card issuer. VISA VisaNet routes the clearing file. Switch TLF logs the authorization; CBS records the debit."
+domain: card
+channel: pos_atm
+bank_role: issuer
+network: VISA
+status: placeholder
+
+participant_files:
+  - id: visa_tc
+    name: VISA T&E Clearing File
+    format: visa_tc05
+    description: "VISA VisaNet clearing file with 4 records per transaction (TCSN 0/1/5/7). TC=05 for POS, TC=07 for Cash."
+  - id: switch_tlf
+    name: Switch TLF (BASE24)
+    format: switch_tlf
+    description: "BASE24 Transaction Log File from the authorization switch."
+  - id: cbs
+    name: Bank CBS Export (EX3198)
+    format: cbs_ex3198
+    description: "Core Banking System transaction export."
+
+linkage_keys:
+  primary: arn
+  secondary: card_pan
+  tertiary: tran_date
+
+mutation_matrix:
+  amount:
+    - id: amt_baseline
+      label: "Amount match"
+      deltas: {}
+    - id: amt_visatc_higher
+      label: "VISA TC higher (+500 Rs)"
+      deltas:
+        visa_tc: 50000
+    - id: amt_visatc_lower
+      label: "VISA TC lower (-500 Rs)"
+      deltas:
+        visa_tc: -50000
+    - id: amt_sw_higher
+      label: "Switch higher (+200 Rs)"
+      deltas:
+        switch_tlf: 20000
+    - id: amt_sw_lower
+      label: "Switch lower (-200 Rs)"
+      deltas:
+        switch_tlf: -20000
+    - id: amt_cbs_higher
+      label: "CBS higher (+500 Rs)"
+      deltas:
+        cbs: 50000
+    - id: amt_cbs_lower
+      label: "CBS lower (-500 Rs)"
+      deltas:
+        cbs: -50000
+    - id: amt_fx_rounding
+      label: "FX rounding (1 paise diff)"
+      deltas:
+        visa_tc: -1
+  date:
+    - id: date_baseline
+      label: "Date match"
+      offsets: {}
+    - id: date_cbs_d1
+      label: "CBS date +1"
+      offsets:
+        cbs: 1
+    - id: date_sw_d1
+      label: "Switch date +1"
+      offsets:
+        switch_tlf: 1
+    - id: date_visatc_d1
+      label: "VISA TC date +1"
+      offsets:
+        visa_tc: 1
+  duplicate:
+    - id: dup_none
+      label: "No duplicate"
+      dup_files: []
+    - id: dup_visatc
+      label: "VISA TC duplicate"
+      dup_files: [visa_tc]
+    - id: dup_sw
+      label: "Switch duplicate"
+      dup_files: [switch_tlf]
+    - id: dup_cbs
+      label: "CBS duplicate"
+      dup_files: [cbs]
+
+scenarios:
+
+  - id: case_01
+    name: "C01 — VISA:fwd SW:fwd CBS:fwd"
+    case_matrix_id: 1
+    action: "OK"
+    is_ok: true
+    weight: 20
+    file_states:
+      visa_tc: 1
+      switch_tlf: 1
+      cbs: 1
+
+  - id: case_02
+    name: "C02 — VISA:fwd SW:fwd CBS:rev"
+    case_matrix_id: 2
+    action: "CBS reversal — recover from customer"
+    is_ok: false
+    weight: 3
+    file_states:
+      visa_tc: 1
+      switch_tlf: 1
+      cbs: -1
+
+  - id: case_03
+    name: "C03 — VISA:fwd SW:fwd CBS:zero"
+    case_matrix_id: 3
+    action: "CBS net zero — recover from customer"
+    is_ok: false
+    weight: 3
+    file_states:
+      visa_tc: 1
+      switch_tlf: 1
+      cbs: 0
+
+  - id: case_04
+    name: "C04 — VISA:fwd SW:fwd CBS:absent"
+    case_matrix_id: 4
+    action: "CBS missing — wait, then recover"
+    is_ok: false
+    weight: 2
+    file_states:
+      visa_tc: 1
+      switch_tlf: 1
+
+  - id: case_05
+    name: "C05 — VISA:fwd SW:rev CBS:fwd"
+    case_matrix_id: 5
+    action: "OK"
+    is_ok: true
+    weight: 5
+    file_states:
+      visa_tc: 1
+      switch_tlf: -1
+      cbs: 1
+
+  - id: case_06
+    name: "C06 — VISA:fwd SW:rev CBS:rev"
+    case_matrix_id: 6
+    action: "CBS reversal — recover from customer"
+    is_ok: false
+    weight: 3
+    file_states:
+      visa_tc: 1
+      switch_tlf: -1
+      cbs: -1
+
+  - id: case_07
+    name: "C07 — VISA:fwd SW:rev CBS:zero"
+    case_matrix_id: 7
+    action: "CBS net zero — recover from customer"
+    is_ok: false
+    weight: 3
+    file_states:
+      visa_tc: 1
+      switch_tlf: -1
+      cbs: 0
+
+  - id: case_08
+    name: "C08 — VISA:fwd SW:rev CBS:absent"
+    case_matrix_id: 8
+    action: "CBS missing — wait, then recover"
+    is_ok: false
+    weight: 2
+    file_states:
+      visa_tc: 1
+      switch_tlf: -1
+
+  - id: case_09
+    name: "C09 — VISA:fwd SW:zero CBS:fwd"
+    case_matrix_id: 9
+    action: "OK"
+    is_ok: true
+    weight: 5
+    file_states:
+      visa_tc: 1
+      switch_tlf: 0
+      cbs: 1
+
+  - id: case_10
+    name: "C10 — VISA:fwd SW:zero CBS:rev"
+    case_matrix_id: 10
+    action: "CBS reversal — recover from customer"
+    is_ok: false
+    weight: 3
+    file_states:
+      visa_tc: 1
+      switch_tlf: 0
+      cbs: -1
+
+  - id: case_11
+    name: "C11 — VISA:fwd SW:zero CBS:zero"
+    case_matrix_id: 11
+    action: "CBS net zero — recover from customer"
+    is_ok: false
+    weight: 3
+    file_states:
+      visa_tc: 1
+      switch_tlf: 0
+      cbs: 0
+
+  - id: case_12
+    name: "C12 — VISA:fwd SW:zero CBS:absent"
+    case_matrix_id: 12
+    action: "CBS missing — wait, then recover"
+    is_ok: false
+    weight: 2
+    file_states:
+      visa_tc: 1
+      switch_tlf: 0
+
+  - id: case_13
+    name: "C13 — VISA:fwd SW:absent CBS:fwd"
+    case_matrix_id: 13
+    action: "OK"
+    is_ok: true
+    weight: 5
+    file_states:
+      visa_tc: 1
+      cbs: 1
+
+  - id: case_14
+    name: "C14 — VISA:fwd SW:absent CBS:rev"
+    case_matrix_id: 14
+    action: "CBS reversal — recover from customer"
+    is_ok: false
+    weight: 2
+    file_states:
+      visa_tc: 1
+      cbs: -1
+
+  - id: case_15
+    name: "C15 — VISA:fwd SW:absent CBS:zero"
+    case_matrix_id: 15
+    action: "CBS net zero — recover from customer"
+    is_ok: false
+    weight: 2
+    file_states:
+      visa_tc: 1
+      cbs: 0
+
+  - id: case_16
+    name: "C16 — VISA:fwd SW:absent CBS:absent"
+    case_matrix_id: 16
+    action: "NFS only — wait, then recover"
+    is_ok: false
+    weight: 1
+    file_states:
+      visa_tc: 1
+
+  - id: case_17
+    name: "C17 — VISA:rev SW:fwd CBS:fwd"
+    case_matrix_id: 17
+    action: "NFS reversal, CBS debit — refund customer"
+    is_ok: false
+    weight: 3
+    file_states:
+      visa_tc: -1
+      switch_tlf: 1
+      cbs: 1
+
+  - id: case_18
+    name: "C18 — VISA:rev SW:fwd CBS:rev"
+    case_matrix_id: 18
+    action: "OK"
+    is_ok: true
+    weight: 5
+    file_states:
+      visa_tc: -1
+      switch_tlf: 1
+      cbs: -1
+
+  - id: case_19
+    name: "C19 — VISA:rev SW:fwd CBS:zero"
+    case_matrix_id: 19
+    action: "CBS net zero — refund customer"
+    is_ok: false
+    weight: 3
+    file_states:
+      visa_tc: -1
+      switch_tlf: 1
+      cbs: 0
+
+  - id: case_20
+    name: "C20 — VISA:rev SW:fwd CBS:absent"
+    case_matrix_id: 20
+    action: "CBS missing — wait, then refund"
+    is_ok: false
+    weight: 2
+    file_states:
+      visa_tc: -1
+      switch_tlf: 1
+
+  - id: case_21
+    name: "C21 — VISA:rev SW:rev CBS:fwd"
+    case_matrix_id: 21
+    action: "NFS+Switch reversal, CBS debit — refund"
+    is_ok: false
+    weight: 3
+    file_states:
+      visa_tc: -1
+      switch_tlf: -1
+      cbs: 1
+
+  - id: case_22
+    name: "C22 — VISA:rev SW:rev CBS:rev"
+    case_matrix_id: 22
+    action: "OK"
+    is_ok: true
+    weight: 5
+    file_states:
+      visa_tc: -1
+      switch_tlf: -1
+      cbs: -1
+
+  - id: case_23
+    name: "C23 — VISA:rev SW:rev CBS:zero"
+    case_matrix_id: 23
+    action: "CBS net zero — refund customer"
+    is_ok: false
+    weight: 3
+    file_states:
+      visa_tc: -1
+      switch_tlf: -1
+      cbs: 0
+
+  - id: case_24
+    name: "C24 — VISA:rev SW:rev CBS:absent"
+    case_matrix_id: 24
+    action: "CBS missing — wait, then refund"
+    is_ok: false
+    weight: 2
+    file_states:
+      visa_tc: -1
+      switch_tlf: -1
+
+  - id: case_25
+    name: "C25 — VISA:rev SW:zero CBS:fwd"
+    case_matrix_id: 25
+    action: "NFS reversal, CBS debit — refund"
+    is_ok: false
+    weight: 3
+    file_states:
+      visa_tc: -1
+      switch_tlf: 0
+      cbs: 1
+
+  - id: case_26
+    name: "C26 — VISA:rev SW:zero CBS:rev"
+    case_matrix_id: 26
+    action: "OK"
+    is_ok: true
+    weight: 5
+    file_states:
+      visa_tc: -1
+      switch_tlf: 0
+      cbs: -1
+
+  - id: case_27
+    name: "C27 — VISA:rev SW:zero CBS:zero"
+    case_matrix_id: 27
+    action: "CBS net zero — refund customer"
+    is_ok: false
+    weight: 3
+    file_states:
+      visa_tc: -1
+      switch_tlf: 0
+      cbs: 0
+
+  - id: case_28
+    name: "C28 — VISA:rev SW:zero CBS:absent"
+    case_matrix_id: 28
+    action: "CBS missing — wait, then refund"
+    is_ok: false
+    weight: 2
+    file_states:
+      visa_tc: -1
+      switch_tlf: 0
+
+  - id: case_29
+    name: "C29 — VISA:rev SW:absent CBS:fwd"
+    case_matrix_id: 29
+    action: "NFS reversal, CBS debit — refund"
+    is_ok: false
+    weight: 2
+    file_states:
+      visa_tc: -1
+      cbs: 1
+
+  - id: case_30
+    name: "C30 — VISA:rev SW:absent CBS:rev"
+    case_matrix_id: 30
+    action: "OK"
+    is_ok: true
+    weight: 5
+    file_states:
+      visa_tc: -1
+      cbs: -1
+
+  - id: case_31
+    name: "C31 — VISA:rev SW:absent CBS:zero"
+    case_matrix_id: 31
+    action: "CBS net zero — refund customer"
+    is_ok: false
+    weight: 2
+    file_states:
+      visa_tc: -1
+      cbs: 0
+
+  - id: case_32
+    name: "C32 — VISA:rev SW:absent CBS:absent"
+    case_matrix_id: 32
+    action: "NFS reversal only — wait, then refund"
+    is_ok: false
+    weight: 1
+    file_states:
+      visa_tc: -1
+
+  - id: case_33
+    name: "C33 — VISA:zero SW:fwd CBS:fwd"
+    case_matrix_id: 33
+    action: "NFS net zero, CBS debit — refund"
+    is_ok: false
+    weight: 3
+    file_states:
+      visa_tc: 0
+      switch_tlf: 1
+      cbs: 1
+
+  - id: case_34
+    name: "C34 — VISA:zero SW:fwd CBS:rev"
+    case_matrix_id: 34
+    action: "NFS net zero, CBS credit — recover"
+    is_ok: false
+    weight: 3
+    file_states:
+      visa_tc: 0
+      switch_tlf: 1
+      cbs: -1
+
+  - id: case_35
+    name: "C35 — VISA:zero SW:fwd CBS:zero"
+    case_matrix_id: 35
+    action: "OK"
+    is_ok: true
+    weight: 5
+    file_states:
+      visa_tc: 0
+      switch_tlf: 1
+      cbs: 0
+
+  - id: case_36
+    name: "C36 — VISA:zero SW:fwd CBS:absent"
+    case_matrix_id: 36
+    action: "NFS net zero, CBS missing — wait"
+    is_ok: false
+    weight: 2
+    file_states:
+      visa_tc: 0
+      switch_tlf: 1
+
+  - id: case_37
+    name: "C37 — VISA:zero SW:rev CBS:fwd"
+    case_matrix_id: 37
+    action: "NFS net zero, CBS debit — refund"
+    is_ok: false
+    weight: 3
+    file_states:
+      visa_tc: 0
+      switch_tlf: -1
+      cbs: 1
+
+  - id: case_38
+    name: "C38 — VISA:zero SW:rev CBS:rev"
+    case_matrix_id: 38
+    action: "NFS net zero, CBS credit — recover"
+    is_ok: false
+    weight: 3
+    file_states:
+      visa_tc: 0
+      switch_tlf: -1
+      cbs: -1
+
+  - id: case_39
+    name: "C39 — VISA:zero SW:rev CBS:zero"
+    case_matrix_id: 39
+    action: "OK"
+    is_ok: true
+    weight: 5
+    file_states:
+      visa_tc: 0
+      switch_tlf: -1
+      cbs: 0
+
+  - id: case_40
+    name: "C40 — VISA:zero SW:rev CBS:absent"
+    case_matrix_id: 40
+    action: "NFS net zero, CBS missing — wait"
+    is_ok: false
+    weight: 2
+    file_states:
+      visa_tc: 0
+      switch_tlf: -1
+
+  - id: case_41
+    name: "C41 — VISA:zero SW:zero CBS:fwd"
+    case_matrix_id: 41
+    action: "All balanced but CBS debit — refund"
+    is_ok: false
+    weight: 3
+    file_states:
+      visa_tc: 0
+      switch_tlf: 0
+      cbs: 1
+
+  - id: case_42
+    name: "C42 — VISA:zero SW:zero CBS:rev"
+    case_matrix_id: 42
+    action: "All balanced but CBS credit — recover"
+    is_ok: false
+    weight: 3
+    file_states:
+      visa_tc: 0
+      switch_tlf: 0
+      cbs: -1
+
+  - id: case_43
+    name: "C43 — VISA:zero SW:zero CBS:zero"
+    case_matrix_id: 43
+    action: "OK"
+    is_ok: true
+    weight: 5
+    file_states:
+      visa_tc: 0
+      switch_tlf: 0
+      cbs: 0
+
+  - id: case_44
+    name: "C44 — VISA:zero SW:zero CBS:absent"
+    case_matrix_id: 44
+    action: "CBS missing — wait"
+    is_ok: false
+    weight: 2
+    file_states:
+      visa_tc: 0
+      switch_tlf: 0
+
+  - id: case_45
+    name: "C45 — VISA:zero SW:absent CBS:fwd"
+    case_matrix_id: 45
+    action: "NFS net zero, CBS debit — refund"
+    is_ok: false
+    weight: 2
+    file_states:
+      visa_tc: 0
+      cbs: 1
+
+  - id: case_46
+    name: "C46 — VISA:zero SW:absent CBS:rev"
+    case_matrix_id: 46
+    action: "NFS net zero, CBS credit — recover"
+    is_ok: false
+    weight: 2
+    file_states:
+      visa_tc: 0
+      cbs: -1
+
+  - id: case_47
+    name: "C47 — VISA:zero SW:absent CBS:zero"
+    case_matrix_id: 47
+    action: "OK"
+    is_ok: true
+    weight: 5
+    file_states:
+      visa_tc: 0
+      cbs: 0
+
+  - id: case_48
+    name: "C48 — VISA:zero SW:absent CBS:absent"
+    case_matrix_id: 48
+    action: "NFS net zero — wait"
+    is_ok: false
+    weight: 1
+    file_states:
+      visa_tc: 0
+
+  - id: case_49
+    name: "C49 — VISA:absent SW:fwd CBS:fwd"
+    case_matrix_id: 49
+    action: "NFS missing — wait, then refund"
+    is_ok: false
+    weight: 2
+    file_states:
+      switch_tlf: 1
+      cbs: 1
+
+  - id: case_50
+    name: "C50 — VISA:absent SW:fwd CBS:rev"
+    case_matrix_id: 50
+    action: "NFS missing — wait, then recover"
+    is_ok: false
+    weight: 2
+    file_states:
+      switch_tlf: 1
+      cbs: -1
+
+  - id: case_51
+    name: "C51 — VISA:absent SW:fwd CBS:zero"
+    case_matrix_id: 51
+    action: "NFS missing — wait"
+    is_ok: false
+    weight: 2
+    file_states:
+      switch_tlf: 1
+      cbs: 0
+
+  - id: case_52
+    name: "C52 — VISA:absent SW:fwd CBS:absent"
+    case_matrix_id: 52
+    action: "Switch only — OK"
+    is_ok: true
+    weight: 5
+    file_states:
+      switch_tlf: 1
+
+  - id: case_53
+    name: "C53 — VISA:absent SW:rev CBS:fwd"
+    case_matrix_id: 53
+    action: "NFS missing — wait, then refund"
+    is_ok: false
+    weight: 2
+    file_states:
+      switch_tlf: -1
+      cbs: 1
+
+  - id: case_54
+    name: "C54 — VISA:absent SW:rev CBS:rev"
+    case_matrix_id: 54
+    action: "NFS missing — wait, then recover"
+    is_ok: false
+    weight: 2
+    file_states:
+      switch_tlf: -1
+      cbs: -1
+
+  - id: case_55
+    name: "C55 — VISA:absent SW:rev CBS:zero"
+    case_matrix_id: 55
+    action: "NFS missing — wait"
+    is_ok: false
+    weight: 2
+    file_states:
+      switch_tlf: -1
+      cbs: 0
+
+  - id: case_56
+    name: "C56 — VISA:absent SW:rev CBS:absent"
+    case_matrix_id: 56
+    action: "Switch reversal only — OK"
+    is_ok: true
+    weight: 5
+    file_states:
+      switch_tlf: -1
+
+  - id: case_57
+    name: "C57 — VISA:absent SW:zero CBS:fwd"
+    case_matrix_id: 57
+    action: "NFS missing — wait, then refund"
+    is_ok: false
+    weight: 2
+    file_states:
+      switch_tlf: 0
+      cbs: 1
+
+  - id: case_58
+    name: "C58 — VISA:absent SW:zero CBS:rev"
+    case_matrix_id: 58
+    action: "NFS missing — wait, then recover"
+    is_ok: false
+    weight: 2
+    file_states:
+      switch_tlf: 0
+      cbs: -1
+
+  - id: case_59
+    name: "C59 — VISA:absent SW:zero CBS:zero"
+    case_matrix_id: 59
+    action: "NFS missing — wait"
+    is_ok: false
+    weight: 2
+    file_states:
+      switch_tlf: 0
+      cbs: 0
+
+  - id: case_60
+    name: "C60 — VISA:absent SW:zero CBS:absent"
+    case_matrix_id: 60
+    action: "Switch net zero — OK"
+    is_ok: true
+    weight: 5
+    file_states:
+      switch_tlf: 0
+
+  - id: case_61
+    name: "C61 — VISA:absent SW:absent CBS:fwd"
+    case_matrix_id: 61
+    action: "CBS debit, nothing else — wait, refund"
+    is_ok: false
+    weight: 1
+    file_states:
+      cbs: 1
+
+  - id: case_62
+    name: "C62 — VISA:absent SW:absent CBS:rev"
+    case_matrix_id: 62
+    action: "CBS credit, nothing else — wait, recover"
+    is_ok: false
+    weight: 1
+    file_states:
+      cbs: -1
+
+  - id: case_63
+    name: "C63 — VISA:absent SW:absent CBS:zero"
+    case_matrix_id: 63
+    action: "CBS net zero, nothing else — wait"
+    is_ok: false
+    weight: 1
+    file_states:
+      cbs: 0
+
+  - id: case_64
+    name: "C64 — VISA:absent SW:absent CBS:absent"
+    case_matrix_id: 64
+    action: "All missing — OK"
+    is_ok: true
+    weight: 5
+    file_states: {}

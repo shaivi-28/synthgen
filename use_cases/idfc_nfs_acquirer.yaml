@@ -1,0 +1,758 @@
+id: idfc_nfs_acquirer
+name: "NFS Cards Acquirer — ATM"
+bank: idfc
+network: NFS
+status: active
+description: >
+  IDFC FIRST Bank as NFS card acquirer. ATM transactions where customer
+  uses a non-IDFC card at IDFC ATM; NFS routes to the issuing bank.
+  Generates 5 files per run: NFS Interchange, TLF, CBSMCW, FSSGL, BGL.
+
+# ── Scenario Groups ────────────────────────────────────────────────────
+# A  — Perfect Match (OK)
+# B  — Single Full Reversal Same Day
+# C  — Reversal on Different Day
+# D  — Partial Reversal
+# E  — Multiple Reversals
+# G  — Disputes / Chargeback
+# H  — Fee Transactions
+# I  — Amount Mismatches
+# J  — Date Mismatches
+# K  — Duplicates & Double Debit
+# L  — Missing Files
+# M  — Crossfire / Direction Mismatch
+# N  — PNC Matrix Filler (remaining combos)
+
+participant_files:
+  - id: nfs
+    name: NFS Interchange
+    description: "NFS Acquirer Interchange File (274-char fixed-width)"
+  - id: tlf
+    name: TLF
+    description: "ATM Switch Transaction Log (864-char × 4 records)"
+  - id: cbsmcw
+    name: CBSMCW
+    description: "CBS Card-Level Transaction File (pipe-delimited, OWDR/OWCR)"
+  - id: fssgl
+    name: FSSGL
+    description: "CBS GL Settlement File (pipe-delimited)"
+  - id: bgl
+    name: BGL
+    description: "Balance GL Report (CBL balance report)"
+
+linkage_keys:
+  primary: rrn
+  secondary: auth_code
+  tertiary: card_pan
+
+scenarios:
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP A — PERFECT MATCH
+  # All files present; amounts and dates exactly aligned.
+  # Outcome: Reconciled OK
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: a01_atm_ok
+    code: A01
+    group: A
+    name: "ATM — Perfect Match"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: OK
+    is_ok: true
+    weight: 30
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP B — SINGLE FULL REVERSAL SAME DAY
+  # All files carry the reversal (or original+reversal) on same date.
+  # Outcome: Reconciled OK
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: b01_atm_rev
+    code: B01
+    group: B
+    name: "ATM — Full Reversal Only (same day)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: -1, tlf: -1, cbsmcw: -1, fssgl: -1}
+    action: OK_REVERSAL
+    is_ok: true
+    weight: 5
+
+  - id: b02_atm_fwd_rev
+    code: B02
+    group: B
+    name: "ATM — Original + Full Reversal (same batch)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 0, tlf: 0, cbsmcw: 0, fssgl: 0}
+    action: OK_WITH_REVERSAL
+    is_ok: true
+    weight: 5
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP C — REVERSAL ON DIFFERENT DAY
+  # Reversal is posted on a different calendar date in one or more files.
+  # Outcome: DATE_MISMATCH (exception)
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: c01_rev_cbs_d1
+    code: C01
+    group: C
+    name: "ATM — Reversal CBS Date D+1 (NFS/TLF on D)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: -1, tlf: -1, cbsmcw: -1, fssgl: -1}
+    date_delta: {cbsmcw: 1, fssgl: 1}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 6
+
+  - id: c02_rev_nfs_d1
+    code: C02
+    group: C
+    name: "ATM — Reversal NFS Date D+1 (CBS/TLF on D)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: -1, tlf: -1, cbsmcw: -1, fssgl: -1}
+    date_delta: {nfs: 1}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: c03_rev_cbs_d3
+    code: C03
+    group: C
+    name: "ATM — Reversal CBS Date D+3 (very late posting)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: -1, tlf: -1, cbsmcw: -1, fssgl: -1}
+    date_delta: {cbsmcw: 3, fssgl: 3}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 4
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP D — PARTIAL REVERSAL
+  # Reversal amount differs from original. Outcome: PARTIAL_REVERSAL
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: d01_partial_rev_lt
+    code: D01
+    group: D
+    name: "ATM — Partial Reversal, Rev Amount < Original"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 0, tlf: 0, cbsmcw: -1, fssgl: -1}
+    amt_delta: {cbsmcw: -15000, fssgl: -15000}
+    action: PARTIAL_REVERSAL
+    is_ok: false
+    weight: 5
+    note: "NFS/TLF carry fwd+rev at full amount; CBS reversal is 150 rupees less"
+
+  - id: d02_over_rev
+    code: D02
+    group: D
+    name: "ATM — Over-Reversal (Rev Amount > Original)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 0, tlf: 0, cbsmcw: -1, fssgl: -1}
+    amt_delta: {cbsmcw: 20000, fssgl: 20000}
+    action: OVER_REVERSAL
+    is_ok: false
+    weight: 4
+    note: "CBS reversal exceeds original withdrawal amount"
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP E — MULTIPLE REVERSALS
+  # Outcome: MULTI_REVERSAL (exception)
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: e01_2rev_sum_lt
+    code: E01
+    group: E
+    name: "ATM — 2 Reversals in CBS, Sum < Original"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: 1, cbsmcw: -1, fssgl: -1}
+    amt_delta: {cbsmcw: -35000, fssgl: -35000}
+    dup_files: [cbsmcw, fssgl]
+    action: MULTI_REVERSAL_SUM_LT
+    is_ok: false
+    weight: 5
+
+  - id: e02_2rev_sum_eq
+    code: E02
+    group: E
+    name: "ATM — 2 Reversals in CBS, Sum = Original (split full reversal)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: 1, cbsmcw: -1, fssgl: -1}
+    dup_files: [cbsmcw, fssgl]
+    action: MULTI_REVERSAL_SUM_EQ
+    is_ok: false
+    weight: 5
+
+  - id: e03_2rev_sum_gt
+    code: E03
+    group: E
+    name: "ATM — 2 Reversals in CBS, Sum > Original (over-reversed)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: 1, cbsmcw: -1, fssgl: -1}
+    amt_delta: {cbsmcw: 10000, fssgl: 10000}
+    dup_files: [cbsmcw, fssgl]
+    action: MULTI_REVERSAL_SUM_GT
+    is_ok: false
+    weight: 4
+
+  - id: e04_2rev_diff_days
+    code: E04
+    group: E
+    name: "ATM — 2 Reversals on Different Days (D and D+2)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: -1, tlf: -1, cbsmcw: -1, fssgl: -1}
+    dup_files: [cbsmcw, fssgl]
+    date_delta: {cbsmcw: 2, fssgl: 2}
+    action: MULTI_REVERSAL_DIFF_DAYS
+    is_ok: false
+    weight: 4
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP G — DISPUTES / CHARGEBACK
+  # Cardholder disputes an ATM withdrawal.
+  # Outcome: DISPUTE (exception)
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: g01_atm_dispute
+    code: G01
+    group: G
+    name: "ATM — Disputed Withdrawal (NFS=rev, TLF=fwd, CBS=fwd+rev)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: -1, tlf: 1, cbsmcw: 0, fssgl: 0}
+    action: DISPUTE
+    is_ok: false
+    weight: 6
+    note: "NFS carries reversal (chargeback via NFS), TLF has original auth, CBS has original debit + chargeback credit"
+
+  - id: g02_partial_chargeback
+    code: G02
+    group: G
+    name: "ATM — Partial Chargeback (rev amount < original)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: -1, tlf: 1, cbsmcw: 0, fssgl: 0}
+    amt_delta: {nfs: -15000, cbsmcw: -15000, fssgl: -15000}
+    action: DISPUTE_PARTIAL
+    is_ok: false
+    weight: 4
+
+  - id: g03_dispute_resolved
+    code: G03
+    group: G
+    name: "ATM — Dispute Resolved (all files match, no net reversal)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: DISPUTE_RESOLVED
+    is_ok: true
+    weight: 3
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP H — FEE / INTERCHANGE TRANSACTIONS
+  # Interchange or processing fee entries that appear in one file
+  # but may be absent in others.
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: h01_fee_ok
+    code: H01
+    group: H
+    name: "ATM — Interchange Fee (all files match)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: FEE_OK
+    is_ok: true
+    weight: 5
+
+  - id: h02_fee_cbs_high
+    code: H02
+    group: H
+    name: "ATM — CBS Amount Higher (interchange fee added)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {cbsmcw: 5000, fssgl: 5000}
+    action: FEE_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: h03_fee_missing_cbs
+    code: H03
+    group: H
+    name: "ATM — Fee in NFS/TLF, CBS Entry Absent"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: 1}
+    action: FEE_MISSING_CBS
+    is_ok: false
+    weight: 3
+
+  - id: h04_fee_missing_nfs
+    code: H04
+    group: H
+    name: "ATM — Fee in TLF/CBS, NFS Entry Absent"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: FEE_MISSING_EPIN
+    is_ok: false
+    weight: 3
+
+  - id: h05_fee_missing_switch
+    code: H05
+    group: H
+    name: "ATM — Fee in NFS/CBS, TLF Absent"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, cbsmcw: 1, fssgl: 1}
+    action: FEE_MISSING_SWITCH
+    is_ok: false
+    weight: 3
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP I — AMOUNT MISMATCHES
+  # One or more files carry a different transaction amount.
+  # Outcome: AMOUNT_MISMATCH (exception)
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: i01_nfs_high
+    code: I01
+    group: I
+    name: "ATM — NFS Amount Higher Than CBS/TLF"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {nfs: 50000}
+    action: AMOUNT_MISMATCH
+    is_ok: false
+    weight: 6
+
+  - id: i02_nfs_low
+    code: I02
+    group: I
+    name: "ATM — NFS Amount Lower Than CBS/TLF"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {nfs: -50000}
+    action: AMOUNT_MISMATCH
+    is_ok: false
+    weight: 5
+
+  - id: i03_cbs_high
+    code: I03
+    group: I
+    name: "ATM — CBS Amount Higher Than NFS/TLF"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {cbsmcw: 50000}
+    action: AMOUNT_MISMATCH
+    is_ok: false
+    weight: 6
+
+  - id: i04_cbs_low
+    code: I04
+    group: I
+    name: "ATM — CBS Amount Lower Than NFS/TLF"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {cbsmcw: -50000}
+    action: AMOUNT_MISMATCH
+    is_ok: false
+    weight: 5
+
+  - id: i05_tlf_high
+    code: I05
+    group: I
+    name: "ATM — TLF Amount Higher Than NFS/CBS"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    amt_delta: {tlf: 50000}
+    action: AMOUNT_MISMATCH
+    is_ok: false
+    weight: 4
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP J — DATE MISMATCHES
+  # Transaction date in one file differs from others.
+  # Outcome: DATE_MISMATCH (exception)
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: j01_cbs_d1
+    code: J01
+    group: J
+    name: "ATM — CBS Date D+1 (late CBS posting)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    date_delta: {cbsmcw: 1}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 6
+
+  - id: j02_cbs_dm1
+    code: J02
+    group: J
+    name: "ATM — CBS Date D-1 (early CBS posting)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    date_delta: {cbsmcw: -1}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: j03_nfs_d1
+    code: J03
+    group: J
+    name: "ATM — NFS Date D+1"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    date_delta: {nfs: 1}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 5
+
+  - id: j04_tlf_d1
+    code: J04
+    group: J
+    name: "ATM — TLF Date D+1"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    date_delta: {tlf: 1}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: j05_cbs_d5
+    code: J05
+    group: J
+    name: "ATM — CBS Date D+5 (very late posting)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    date_delta: {cbsmcw: 5, fssgl: 5}
+    action: DATE_MISMATCH
+    is_ok: false
+    weight: 4
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP K — DUPLICATES & DOUBLE DEBIT
+  # Outcome: DUPLICATE / DOUBLE_DEBIT (exception)
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: k01_dup_nfs
+    code: K01
+    group: K
+    name: "ATM — Duplicate Row in NFS"
+    tran_type: ACQ_ATM
+    tran_category: D
+    dup_files: [nfs]
+    file_states: {nfs: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: DUPLICATE
+    is_ok: false
+    weight: 6
+
+  - id: k02_dup_tlf
+    code: K02
+    group: K
+    name: "ATM — Duplicate Row in TLF"
+    tran_type: ACQ_ATM
+    tran_category: D
+    dup_files: [tlf]
+    file_states: {nfs: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: DUPLICATE
+    is_ok: false
+    weight: 5
+
+  - id: k03_dup_cbs
+    code: K03
+    group: K
+    name: "ATM — Duplicate Row in CBS Only"
+    tran_type: ACQ_ATM
+    tran_category: D
+    dup_files: [cbsmcw]
+    file_states: {nfs: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: DUPLICATE
+    is_ok: false
+    weight: 4
+
+  - id: k04_double_debit
+    code: K04
+    group: K
+    name: "ATM — Double Debit (CBS debits customer twice)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    dup_files: [cbsmcw, fssgl]
+    file_states: {nfs: 1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: DOUBLE_DEBIT
+    is_ok: false
+    weight: 5
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP L — MISSING FILES
+  # One or more participant files absent for a transaction.
+  # Outcome: MISSING_* (exception)
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: l01_nfs_miss
+    code: L01
+    group: L
+    name: "ATM — NFS Absent (TLF+CBS only)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: MISSING_NETWORK_FILE
+    is_ok: false
+    weight: 5
+
+  - id: l02_tlf_miss
+    code: L02
+    group: L
+    name: "ATM — TLF Absent (NFS+CBS only)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, cbsmcw: 1, fssgl: 1}
+    action: MISSING_SWITCH_FILE
+    is_ok: false
+    weight: 5
+
+  - id: l03_cbs_miss
+    code: L03
+    group: L
+    name: "ATM — CBS Absent (NFS+TLF only)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: 1}
+    action: MISSING_CBS_FILE
+    is_ok: false
+    weight: 5
+
+  - id: l04_nfs_cbs_miss
+    code: L04
+    group: L
+    name: "ATM — NFS + CBS Absent (TLF only)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {tlf: 1}
+    action: MISSING_NETWORK_AND_CBS
+    is_ok: false
+    weight: 3
+
+  - id: l05_tlf_cbs_miss
+    code: L05
+    group: L
+    name: "ATM — TLF + CBS Absent (NFS only)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1}
+    action: MISSING_SWITCH_AND_CBS
+    is_ok: false
+    weight: 3
+
+  - id: l06_all_miss
+    code: L06
+    group: L
+    name: "ATM — All Files Absent"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {}
+    action: ALL_MISSING
+    is_ok: false
+    weight: 1
+
+  - id: l07_cbs_only
+    code: L07
+    group: L
+    name: "ATM — CBS Only (NFS + TLF Absent)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {cbsmcw: 1, fssgl: 1}
+    action: MISSING_NETWORK_AND_SWITCH
+    is_ok: false
+    weight: 3
+
+  - id: l08_nfs_only
+    code: L08
+    group: L
+    name: "ATM — NFS Only (TLF + CBS Absent)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1}
+    action: MISSING_SWITCH_AND_CBS
+    is_ok: false
+    weight: 2
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP M — CROSSFIRE / DIRECTION MISMATCH
+  # Transaction direction inconsistent across files.
+  # Outcome: CROSSFIRE_MISMATCH / REVERSAL_MISMATCH
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: m01_nfs_rev_cbs_fwd
+    code: M01
+    group: M
+    name: "ATM — NFS Reversal, CBS Forward (crossfire)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: -1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 4
+
+  - id: m02_tlf_rev_nfs_fwd
+    code: M02
+    group: M
+    name: "ATM — TLF Reversal, NFS Forward"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: -1, cbsmcw: 1, fssgl: 1}
+    action: CROSSFIRE_SWITCH
+    is_ok: false
+    weight: 4
+
+  - id: m03_nfs_tlf_rev_cbs_fwd
+    code: M03
+    group: M
+    name: "ATM — NFS + TLF Reversal, CBS Forward"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: -1, tlf: -1, cbsmcw: 1, fssgl: 1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 3
+
+  - id: m04_nfs_fwd_rev_tlf_fwd_only
+    code: M04
+    group: M
+    name: "ATM — NFS Fwd+Rev, TLF Forward Only (reversal mismatch)"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 0, tlf: 1, cbsmcw: 0, fssgl: 0}
+    action: REVERSAL_MISMATCH
+    is_ok: false
+    weight: 3
+
+  - id: m05_cbs_rev_nfs_tlf_fwd
+    code: M05
+    group: M
+    name: "ATM — CBS Reversal, NFS + TLF Forward"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: 1, cbsmcw: -1, fssgl: -1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 3
+
+  # ══════════════════════════════════════════════════════════════════
+  # GROUP N — PNC MATRIX FILLER
+  # Remaining (nfs, tlf, cbs) state combinations not covered above.
+  # ══════════════════════════════════════════════════════════════════
+
+  - id: n01_n1_s1_c0
+    code: N01
+    group: N
+    name: "ATM — NFS:fwd TLF:fwd CBS:fwd+rev"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: 1, cbsmcw: 0, fssgl: 0}
+    action: REVERSAL_IN_CBS_ONLY
+    is_ok: false
+    weight: 2
+
+  - id: n02_n1_s1_cm1
+    code: N02
+    group: N
+    name: "ATM — NFS:fwd TLF:fwd CBS:rev"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: 1, cbsmcw: -1, fssgl: -1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n03_n1_sm1_cm1
+    code: N03
+    group: N
+    name: "ATM — NFS:fwd TLF:rev CBS:rev"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: -1, cbsmcw: -1, fssgl: -1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n04_n1_sm1_c0
+    code: N04
+    group: N
+    name: "ATM — NFS:fwd TLF:rev CBS:fwd+rev"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: -1, cbsmcw: 0, fssgl: 0}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n05_n1_sm1_cabs
+    code: N05
+    group: N
+    name: "ATM — NFS:fwd TLF:rev CBS:absent"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 1, tlf: -1}
+    action: MISSING_CBS_FILE
+    is_ok: false
+    weight: 2
+
+  - id: n06_nm1_s1_c1
+    code: N06
+    group: N
+    name: "ATM — NFS:rev TLF:fwd CBS:fwd"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: -1, tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n07_n0_s1_c1
+    code: N07
+    group: N
+    name: "ATM — NFS:fwd+rev TLF:fwd CBS:fwd"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 0, tlf: 1, cbsmcw: 1, fssgl: 1}
+    action: REVERSAL_MISMATCH
+    is_ok: false
+    weight: 2
+
+  - id: n08_n0_sm1_c1
+    code: N08
+    group: N
+    name: "ATM — NFS:fwd+rev TLF:rev CBS:fwd"
+    tran_type: ACQ_ATM
+    tran_category: D
+    file_states: {nfs: 0, tlf: -1, cbsmcw: 1, fssgl: 1}
+    action: CROSSFIRE_MISMATCH
+    is_ok: false
+    weight: 2

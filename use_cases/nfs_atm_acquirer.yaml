@@ -1,0 +1,11 @@
+id: nfs_atm_acquirer
+name: "EJ Generator"
+description: "Generate Electronic Journal (EJ) files for ATMs (Hyosung U1 / S5)."
+domain: card
+channel: atm
+bank_role: acquirer
+network: NFS
+status: active
+
+participant_files: []
+scenarios: []
