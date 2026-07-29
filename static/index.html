@@ -836,40 +836,149 @@ init();
 // NFS ATM ACQUIRER — HYOSUNG EJ VIEW
 // ─────────────────────────────────────────────
 const EJ_BANKS = [
-  { id: 'sbi', name: 'SBI — State Bank of India', vendors: ['hyosung'] }
+  { id: 'sbi', name: 'SBI — State Bank of India', vendors: ['hyosung'] },
+  { id: 'idfc', name: 'IDFC Bank', vendors: ['euronet', 'eps', 'fss', 'ncr'] },
 ];
 const EJ_VENDORS = {
   hyosung: { name: 'Hyosung', types: [
     { id: 'U1', label: 'U1 — Withdrawal only' },
     { id: 'S5', label: 'S5 — Recycler (Deposit + Withdrawal)' }
-  ]}
+  ]},
+  euronet: { name: 'EuroNet', types: [
+    { id: 'EN', label: 'EN — Withdrawal only (dispense)' },
+    { id: 'ER', label: 'ER — Recycler' }
+  ]},
+  eps: { name: 'EPS', types: [
+    { id: 'PN', label: 'PN — Withdrawal only (dispense)' },
+    { id: 'PR', label: 'PR — Recycler' }
+  ]},
+  fss: { name: 'FSS', types: [
+    { id: 'IN', label: 'IN — Withdrawal only (dispense)' }
+  ]},
+  ncr: { name: 'NCR', types: [
+    { id: 'NX', label: 'NX — Withdrawal only (dispense)' }
+  ]},
 };
 const EJ_CASES = [
-  { id: 'sync',                 label: 'Sync with other files',                desc: 'Normal successful transactions (default baseline)',          default: true,  s5_only: false },
-  { id: 'withdrawal_success',   label: 'Successful withdrawal',                desc: 'Standard cash withdrawal transaction',                      default: true,  s5_only: false },
-  { id: 'balance_inquiry',      label: 'Balance inquiry',                      desc: 'No cash dispensed — balance check only',                    default: true,  s5_only: false },
-  { id: 'declined_insufficient',label: 'Declined — insufficient funds',        desc: 'Host declines due to insufficient balance',                 default: false, s5_only: false },
-  { id: 'declined_unauthorized',label: 'Declined — unauthorized card',         desc: 'Card rejected (e.g., response code 050)',                   default: false, s5_only: false },
-  { id: 'host_timeout',         label: 'Host timeout / no response',           desc: 'ATM timed out waiting for host response',                   default: false, s5_only: false },
-  { id: 'cash_not_taken',       label: 'Cash not taken (retracted)',           desc: 'Customer did not take cash; ATM retracted it',              default: false, s5_only: false },
-  { id: 'notes_in_reject',      label: 'Notes in reject counter',              desc: 'Some notes moved to reject cassette during dispense',       default: false, s5_only: false },
-  { id: 'partial_ej',           label: 'Partial / split transaction',          desc: 'Transaction starts but ends in next EJ file',               default: false, s5_only: false },
-  { id: 'admin_cassette',       label: 'Admin transaction (cassette replenishment)', desc: 'Machine subtotal / cassette refill by engineer',      default: false, s5_only: false },
-  { id: 'unknown_notes',        label: 'Unknown denomination notes',           desc: 'UNKNOWN denom appears in cassette counters',                default: false, s5_only: false },
-  { id: 'deposit_card',         label: 'Card cash deposit',                   desc: 'Customer deposits cash using card',                         default: false, s5_only: true  },
-  { id: 'deposit_cardless',     label: 'Cardless deposit',                    desc: 'UPI-based cardless cash deposit',                           default: false, s5_only: true  },
-  { id: 'deposit_rejected',     label: 'Deposit with rejected notes',         desc: 'Some notes rejected during deposit',                        default: false, s5_only: true  },
-  { id: 'deposit_retracted',    label: 'Deposit retracted',                   desc: 'Deposit cash moved to retract cassette',                    default: false, s5_only: true  },
-  { id: 'deposit_jam',          label: 'Deposit with cash JAM error',         desc: 'CASH_JAM_OCCURED during deposit transaction',               default: false, s5_only: true  },
+  { id: 'sync',                 label: 'Sync with other files',                desc: 'Normal successful transactions (default baseline)',          default: true,  s5_only: false, vendors: ['hyosung'] },
+  { id: 'withdrawal_success',   label: 'Successful withdrawal',                desc: 'Standard cash withdrawal transaction',                      default: true,  s5_only: false, vendors: ['hyosung'] },
+  { id: 'balance_inquiry',      label: 'Balance inquiry',                      desc: 'No cash dispensed — balance check only',                    default: true,  s5_only: false, vendors: ['hyosung', 'euronet', 'eps', 'fss'] },
+  { id: 'declined_insufficient',label: 'Declined — insufficient funds',        desc: 'Host declines due to insufficient balance',                 default: false, s5_only: false, vendors: ['hyosung'] },
+  { id: 'declined_unauthorized',label: 'Declined — unauthorized card',         desc: 'Card rejected (e.g., response code 050)',                   default: false, s5_only: false, vendors: ['hyosung'] },
+  { id: 'host_timeout',         label: 'Host timeout / no response',           desc: 'ATM timed out waiting for host response',                   default: false, s5_only: false, vendors: ['hyosung'] },
+  { id: 'cash_not_taken',       label: 'Cash not taken (retracted)',           desc: 'Customer did not take cash; ATM retracted it',              default: false, s5_only: false, vendors: ['hyosung', 'euronet', 'eps', 'fss', 'ncr'] },
+  { id: 'notes_in_reject',      label: 'Notes in reject counter',              desc: 'Some notes moved to reject cassette during dispense',       default: false, s5_only: false, vendors: ['hyosung', 'euronet', 'eps', 'fss', 'ncr'] },
+  { id: 'partial_ej',           label: 'Partial / split transaction',          desc: 'Transaction starts but ends in next EJ file',               default: false, s5_only: false, vendors: ['hyosung'] },
+  { id: 'admin_cassette',       label: 'Admin transaction (cassette replenishment)', desc: 'Machine subtotal / cassette refill by engineer',      default: false, s5_only: false, vendors: ['hyosung'] },
+  { id: 'unknown_notes',        label: 'Unknown denomination notes',           desc: 'UNKNOWN denom appears in cassette counters',                default: false, s5_only: false, vendors: ['hyosung'] },
+  { id: 'deposit_card',         label: 'Card cash deposit',                   desc: 'Customer deposits cash using card',                         default: false, s5_only: true,  vendors: ['hyosung'] },
+  { id: 'deposit_cardless',     label: 'Cardless deposit',                    desc: 'UPI-based cardless cash deposit',                           default: false, s5_only: true,  vendors: ['hyosung'] },
+  { id: 'deposit_rejected',     label: 'Deposit with rejected notes',         desc: 'Some notes rejected during deposit',                        default: false, s5_only: true,  vendors: ['hyosung'] },
+  { id: 'deposit_retracted',    label: 'Deposit retracted',                   desc: 'Deposit cash moved to retract cassette',                    default: false, s5_only: true,  vendors: ['hyosung'] },
+  { id: 'deposit_jam',          label: 'Deposit with cash JAM error',         desc: 'CASH_JAM_OCCURED during deposit transaction',               default: false, s5_only: true,  vendors: ['hyosung'] },
+  { id: 'simple_withdrawal',    label: 'Simple withdrawal',                   desc: 'Standard IDFC ATM cash withdrawal transaction',             default: true,  s5_only: false, vendors: ['euronet', 'eps', 'fss', 'ncr'] },
+  { id: 'cash_deposit',         label: 'Cash deposit',                        desc: 'Recycler cash-in deposit, interleaved with withdrawals',    default: true,  s5_only: false, vendors: ['eps', 'euronet'], restrict_atm_types: ['PR', 'ER'] },
+
+  // ── New scenario batch (ER/PN/PR/IN/EN/NX) ──────────────────────────────
+  { id: 'host_timeout',             label: 'Host timeout / no response',           desc: 'ATM timed out waiting for host response',                   default: true,  s5_only: false, vendors: ['euronet', 'eps', 'fss'] },
+  { id: 'admin_cassette',           label: 'Admin transaction (cassette replenishment)', desc: 'Machine subtotal / cassette refill by engineer',      default: true,  s5_only: false, vendors: ['euronet', 'eps', 'fss'] },
+  { id: 'power_cut',                label: 'Power cut (device reinit)',            desc: 'Mid-day restart / device health-check sequence',            default: true,  s5_only: false, vendors: ['euronet', 'eps', 'fss'] },
+  { id: 'pin_tries_exceeded',       label: 'PIN tries exceeded',                   desc: 'Response code 075 — no PIN attempts left',                  default: true,  s5_only: false, vendors: ['euronet', 'eps', 'fss', 'ncr'] },
+  { id: 'invalid_pin',              label: 'Invalid PIN',                          desc: 'Response code 055 — single wrong attempt',                  default: false, s5_only: false, vendors: ['euronet', 'eps', 'fss', 'ncr'] },
+  { id: 'declined_insufficient_funds', label: 'Declined — insufficient funds',     desc: 'Post-amount decline — response code is an unverified placeholder', default: true,  s5_only: false, vendors: ['euronet', 'eps', 'fss', 'ncr'] },
+  { id: 'declined_unauthorized_card',  label: 'Declined — unauthorized card',      desc: 'Card-stage decline — response code is an unverified placeholder',  default: true,  s5_only: false, vendors: ['euronet', 'eps', 'fss', 'ncr'] },
+  { id: 'daily_limit_exceeded',     label: 'Daily withdrawal limit exceeded',      desc: 'Post-amount decline — response code is an unverified placeholder', default: true,  s5_only: false, vendors: ['euronet', 'eps', 'fss', 'ncr'] },
+  { id: 'card_expired',             label: 'Card expired',                        desc: 'Card-stage decline — response code is an unverified placeholder',  default: true,  s5_only: false, vendors: ['euronet', 'eps', 'fss', 'ncr'] },
+  { id: 'partial_split_transaction',label: 'Partial / split transaction',          desc: 'Multiple dispense cycles within one transaction',           default: true,  s5_only: false, vendors: ['euronet', 'eps', 'fss', 'ncr'] },
+  { id: 'unknown_denom_notes',      label: 'Unknown denomination notes',           desc: 'UNKNOWN denom appears in cassette counters',                 default: false, s5_only: false, vendors: ['euronet', 'eps', 'fss', 'ncr'] },
+  { id: 'failure_to_collect_card',  label: 'Failure to collect card',              desc: 'Card retained/captured instead of taken',                   default: true,  s5_only: false, vendors: ['euronet', 'eps', 'fss', 'ncr'] },
+  { id: 'balance_inquiry_success',  label: 'Balance inquiry (success)',            desc: 'NX: successful balance check sibling of the existing decline', default: false, s5_only: false, vendors: ['ncr'], restrict_atm_types: ['NX'] },
+  { id: 'deposit_cash_jam',         label: 'Deposit with cash jam',                desc: 'Hardware jam during deposit — ends in failure',              default: false, s5_only: false, vendors: ['eps', 'euronet'], restrict_atm_types: ['PR', 'ER'] },
 ];
 
 let ejSelectedCases = new Set();
 let ejLastResult = null;
+let ejCurrentVendor = EJ_BANKS[0].vendors[0];
+// "Sync with other files": internal continuity of TXN NO/RRN/session IDs
+// across multiple files generated for the same ATM+day batch. Keyed by
+// atm_type (unique across IDFC vendors), holding the ending state returned
+// by the previous /api/generate-ej call so the next call can continue it.
+let ejSyncState = {};
+
+function ejOverviewText(vendor) {
+  const vendorName = EJ_VENDORS[vendor]?.name || vendor;
+  if (vendor !== 'hyosung') {
+    return `Generate a ${vendorName} Electronic Journal (EJ) file for IDFC Bank ATMs. ` +
+           'The EJ captures every dispense event at the ATM — card insert, PIN entry, cash dispense, ' +
+           'receipt — as a sequential log used for ATM reconciliation with CBS and NFS records.';
+  }
+  return 'Generate a Hyosung Electronic Journal (EJ) file for SBI ATMs. ' +
+         'The EJ captures every event at the ATM — withdrawals, deposits, admin tallies, errors — ' +
+         'as a sequential log used for ATM reconciliation with CBS and NFS records.';
+}
+
+function ejAtmTypeOptions(vendor) {
+  return (EJ_VENDORS[vendor]?.types || []).map(t => `<option value="${t.id}">${t.label}</option>`).join('');
+}
+
+function ejRenderVendorField(bank) {
+  if (bank.vendors.length > 1) {
+    return `<select class="form-input" id="ej-vendor-select" onchange="ejVendorChanged()">
+      ${bank.vendors.map(v => `<option value="${v}">${EJ_VENDORS[v].name}</option>`).join('')}
+    </select>`;
+  }
+  return `<div id="ej-vendor-display" style="padding:8px 12px;border-radius:6px;border:1px solid var(--border2);background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--accent)">${EJ_VENDORS[bank.vendors[0]].name}</div>`;
+}
+
+function ejRenderCasesSections(vendor) {
+  const atmType = document.getElementById('ej-atm-type')?.value || (EJ_VENDORS[vendor]?.types || [])[0]?.id;
+  const commonCases = EJ_CASES.filter(c => c.vendors.includes(vendor) && !c.s5_only && !c.restrict_atm_types);
+  const s5Cases = EJ_CASES.filter(c => c.vendors.includes(vendor) && c.s5_only);
+  const restrictedCases = EJ_CASES.filter(c => c.vendors.includes(vendor) && !c.s5_only && c.restrict_atm_types);
+
+  let html = `
+    <div style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--text2);margin-bottom:10px">
+      EJ Scenarios
+      <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3);margin-left:8px">Select the transaction types to include in the EJ file</span>
+    </div>
+
+    <div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Common Cases</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;${(s5Cases.length || restrictedCases.length) ? 'margin-bottom:16px' : ''}" id="ej-common-cases">
+      ${commonCases.map(c => ejCaseCheckbox(c, true)).join('')}
+    </div>`;
+
+  if (s5Cases.length) {
+    const isS5 = atmType === 'S5';
+    html += `
+    <div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;margin-top:16px">
+      S5 Recycler Cases (Deposit)
+      <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3);margin-left:6px" id="ej-s5-note">${isS5 ? '' : '— select S5 ATM type to enable'}</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px" id="ej-s5-cases">
+      ${s5Cases.map(c => ejCaseCheckbox(c, isS5)).join('')}
+    </div>`;
+  }
+
+  if (restrictedCases.length) {
+    const enabledTypes = [...new Set(restrictedCases.flatMap(c => c.restrict_atm_types))];
+    const isEnabled = enabledTypes.includes(atmType);
+    html += `
+    <div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;margin-top:16px">
+      Recycler Cases (Deposit)
+      <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3);margin-left:6px" id="ej-recycler-note">${isEnabled ? '' : `— select ${enabledTypes.join('/')} ATM type to enable`}</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px" id="ej-recycler-cases">
+      ${restrictedCases.map(c => ejCaseCheckbox(c, c.restrict_atm_types.includes(atmType))).join('')}
+    </div>`;
+  }
+  return html;
+}
 
 function renderNFSATMContent() {
-  // Init selected cases from defaults
+  // Init selected cases from defaults for the current vendor
+  ejCurrentVendor = EJ_BANKS[0].vendors[0];
   ejSelectedCases.clear();
-  EJ_CASES.filter(c => c.default).forEach(c => ejSelectedCases.add(c.id));
+  EJ_CASES.filter(c => c.vendors.includes(ejCurrentVendor) && c.default).forEach(c => ejSelectedCases.add(c.id));
 
   const mc = document.getElementById('main-content');
   mc.innerHTML = `
@@ -884,10 +993,8 @@ function renderNFSATMContent() {
         </div>
       </div>
       <div class="panel-body">
-        <div style="font-size:13px;color:var(--text2);line-height:1.6;max-width:640px">
-          Generate a Hyosung Electronic Journal (EJ) file for SBI ATMs.
-          The EJ captures every event at the ATM — withdrawals, deposits, admin tallies, errors —
-          as a sequential log used for ATM reconciliation with CBS and NFS records.
+        <div id="ej-overview-desc" style="font-size:13px;color:var(--text2);line-height:1.6;max-width:640px">
+          ${ejOverviewText(ejCurrentVendor)}
         </div>
       </div>
     </div>
@@ -907,18 +1014,17 @@ function renderNFSATMContent() {
             </select>
           </div>
 
-          <!-- Vendor (read-only) -->
+          <!-- Vendor -->
           <div class="form-group">
             <div class="form-label">EJ Vendor</div>
-            <div id="ej-vendor-display" style="padding:8px 12px;border-radius:6px;border:1px solid var(--border2);background:var(--bg);font-family:var(--mono);font-size:13px;color:var(--accent)">Hyosung</div>
+            <div id="ej-vendor-field">${ejRenderVendorField(EJ_BANKS[0])}</div>
           </div>
 
           <!-- ATM Type -->
           <div class="form-group">
             <div class="form-label">ATM Type</div>
             <select class="form-input" id="ej-atm-type" onchange="ejAtmTypeChanged()">
-              <option value="U1">U1 — Withdrawal only</option>
-              <option value="S5">S5 — Recycler (Deposit + Withdrawal)</option>
+              ${ejAtmTypeOptions(ejCurrentVendor)}
             </select>
           </div>
 
@@ -938,26 +1044,13 @@ function renderNFSATMContent() {
         </div>
 
         <!-- EJ Scenarios checklist -->
-        <div style="margin-bottom:18px">
-          <div style="font-size:11px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--text2);margin-bottom:10px">
-            EJ Scenarios
-            <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3);margin-left:8px">Select the transaction types to include in the EJ file</span>
-          </div>
+        <div id="ej-cases-wrapper" style="margin-bottom:18px">
+          ${ejRenderCasesSections(ejCurrentVendor)}
+        </div>
 
-          <!-- Common Cases -->
-          <div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Common Cases</div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px" id="ej-common-cases">
-            ${EJ_CASES.filter(c => !c.s5_only).map(c => ejCaseCheckbox(c, true)).join('')}
-          </div>
-
-          <!-- S5 Recycler Cases -->
-          <div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">
-            S5 Recycler Cases (Deposit)
-            <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3);margin-left:6px" id="ej-s5-note">— select S5 ATM type to enable</span>
-          </div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px" id="ej-s5-cases">
-            ${EJ_CASES.filter(c => c.s5_only).map(c => ejCaseCheckbox(c, false)).join('')}
-          </div>
+        <!-- Sync with other files (TXN NO/RRN/session ID continuity) -->
+        <div id="ej-sync-wrapper" style="margin-bottom:18px">
+          ${ejRenderSyncToggle()}
         </div>
 
         <div class="actions-row">
@@ -991,17 +1084,21 @@ function renderNFSATMContent() {
 function ejCaseCheckbox(c, enabled) {
   const checked = ejSelectedCases.has(c.id) ? 'checked' : '';
   const isS5 = c.s5_only;
+  const isRestricted = !isS5 && !!c.restrict_atm_types;
+  const disabled = isS5 || (isRestricted && !enabled);
+  const dimmed = isS5 || (isRestricted && !enabled);
   return `
-    <div id="ej-case-${c.id}" style="background:var(--surface2);border-radius:6px;padding:10px 12px;border:1px solid var(--border);opacity:${enabled && !isS5 ? 1 : (isS5 ? 0.45 : 1)}">
-      <label style="display:flex;gap:8px;align-items:flex-start;cursor:${isS5 ? 'default' : 'pointer'}">
+    <div id="ej-case-${c.id}" style="background:var(--surface2);border-radius:6px;padding:10px 12px;border:1px solid var(--border);opacity:${dimmed ? 0.45 : 1}">
+      <label style="display:flex;gap:8px;align-items:flex-start;cursor:${disabled ? 'default' : 'pointer'}">
         <input type="checkbox" id="ej-chk-${c.id}" ${checked}
-               ${isS5 ? 'disabled' : ''}
+               ${disabled ? 'disabled' : ''}
                onchange="ejToggleCase('${c.id}', this.checked)"
                style="margin-top:2px;accent-color:var(--accent);flex-shrink:0">
         <div>
           <div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:2px">
             ${c.label}
             ${c.s5_only ? '<span style="font-size:9px;font-family:var(--mono);padding:1px 5px;border-radius:3px;background:#0a1e36;color:var(--accent);border:1px solid #1a3a6a;margin-left:4px">S5</span>' : ''}
+            ${isRestricted ? `<span style="font-size:9px;font-family:var(--mono);padding:1px 5px;border-radius:3px;background:#0a1e36;color:var(--accent);border:1px solid #1a3a6a;margin-left:4px">${c.restrict_atm_types.join('/')}</span>` : ''}
           </div>
           <div style="font-size:10px;color:var(--text2);line-height:1.4">${c.desc}</div>
         </div>
@@ -1021,31 +1118,128 @@ function ejUpdateCaseCount() {
   if (el) el.textContent = `${n} case${n !== 1 ? 's' : ''} selected`;
 }
 
+function ejSyncKey(atmType) {
+  return atmType;
+}
+
+function ejRenderSyncToggle() {
+  // Hyosung has its own 'sync' scenario checkbox (baseline concept) — this
+  // toggle is the IDFC-vendor cross-file continuity feature, a distinct thing.
+  if (ejCurrentVendor === 'hyosung') return '';
+  const atmType = document.getElementById('ej-atm-type')?.value || '';
+  const key = ejSyncKey(atmType);
+  const prior = ejSyncState[key];
+  return `
+    <div style="background:var(--surface2);border-radius:6px;padding:10px 12px;border:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <label style="display:flex;gap:8px;align-items:center;cursor:${prior ? 'pointer' : 'default'};font-size:12px;color:var(--text)">
+        <input type="checkbox" id="ej-sync-chk" ${prior ? '' : 'disabled'} style="accent-color:var(--accent);flex-shrink:0">
+        Sync with other files — continue TXN NO / RRN / session IDs from the last file generated for this ATM type
+      </label>
+      <span style="font-size:10px;color:var(--text3)">${prior ? `last: ATM ${prior.atm_id_full}, ${prior.location}` : '(generate one file first to enable)'}</span>
+      ${prior ? `<button type="button" class="btn" style="font-size:10px;padding:3px 8px;margin-left:auto" onclick="ejResetSync()">Reset batch</button>` : ''}
+    </div>`;
+}
+
+function ejRefreshSyncToggle(preserveChecked) {
+  const wrapper = document.getElementById('ej-sync-wrapper');
+  if (!wrapper) return;
+  wrapper.innerHTML = ejRenderSyncToggle();
+  const chk = document.getElementById('ej-sync-chk');
+  if (chk && preserveChecked) chk.checked = true;
+}
+
+function ejResetSync() {
+  const atmType = document.getElementById('ej-atm-type')?.value || '';
+  delete ejSyncState[ejSyncKey(atmType)];
+  ejRefreshSyncToggle(false);
+}
+
 function ejBankChanged() {
-  // Currently only SBI/Hyosung — vendor display is always Hyosung
-  const vendor = document.getElementById('ej-vendor-display');
-  if (vendor) vendor.textContent = 'Hyosung';
+  const bankId = document.getElementById('ej-bank')?.value;
+  const bank = EJ_BANKS.find(b => b.id === bankId) || EJ_BANKS[0];
+  ejCurrentVendor = bank.vendors[0];
+
+  const vendorField = document.getElementById('ej-vendor-field');
+  if (vendorField) vendorField.innerHTML = ejRenderVendorField(bank);
+
+  ejApplyVendor();
+}
+
+function ejVendorChanged() {
+  const sel = document.getElementById('ej-vendor-select');
+  if (sel) ejCurrentVendor = sel.value;
+  ejApplyVendor();
+}
+
+function ejApplyVendor() {
+  const overviewEl = document.getElementById('ej-overview-desc');
+  if (overviewEl) overviewEl.textContent = ejOverviewText(ejCurrentVendor);
+
+  const atmTypeSel = document.getElementById('ej-atm-type');
+  if (atmTypeSel) atmTypeSel.innerHTML = ejAtmTypeOptions(ejCurrentVendor);
+
+  // Reset selected cases to defaults for the newly selected vendor
+  ejSelectedCases.clear();
+  EJ_CASES.filter(c => c.vendors.includes(ejCurrentVendor) && c.default).forEach(c => ejSelectedCases.add(c.id));
+
+  const wrapper = document.getElementById('ej-cases-wrapper');
+  if (wrapper) wrapper.innerHTML = ejRenderCasesSections(ejCurrentVendor);
+
+  ejUpdateCaseCount();
+  ejAtmTypeChanged();
+  ejRefreshSyncToggle(false);
 }
 
 function ejAtmTypeChanged() {
   const atmType = document.getElementById('ej-atm-type')?.value || 'U1';
-  const isS5 = atmType === 'S5';
-  const noteEl = document.getElementById('ej-s5-note');
-  if (noteEl) noteEl.textContent = isS5 ? '' : '— select S5 ATM type to enable';
 
-  EJ_CASES.filter(c => c.s5_only).forEach(c => {
-    const wrapper = document.getElementById(`ej-case-${c.id}`);
-    const chk = document.getElementById(`ej-chk-${c.id}`);
-    if (wrapper) wrapper.style.opacity = isS5 ? '1' : '0.45';
-    if (chk) {
-      chk.disabled = !isS5;
-      if (!isS5) {
-        chk.checked = false;
-        ejSelectedCases.delete(c.id);
+  if (ejCurrentVendor === 'hyosung') {
+    const isS5 = atmType === 'S5';
+    const noteEl = document.getElementById('ej-s5-note');
+    if (noteEl) noteEl.textContent = isS5 ? '' : '— select S5 ATM type to enable';
+
+    EJ_CASES.filter(c => c.s5_only && c.vendors.includes('hyosung')).forEach(c => {
+      const wrapper = document.getElementById(`ej-case-${c.id}`);
+      const chk = document.getElementById(`ej-chk-${c.id}`);
+      if (wrapper) wrapper.style.opacity = isS5 ? '1' : '0.45';
+      if (chk) {
+        chk.disabled = !isS5;
+        if (!isS5) {
+          chk.checked = false;
+          ejSelectedCases.delete(c.id);
+        }
       }
-    }
-  });
+    });
+  }
+
+  // Recycler-only cases (e.g. cash_deposit for ER/PR) — generic across any vendor
+  const restrictedCases = EJ_CASES.filter(c => !c.s5_only && c.restrict_atm_types && c.vendors.includes(ejCurrentVendor));
+  if (restrictedCases.length) {
+    const enabledTypes = [...new Set(restrictedCases.flatMap(c => c.restrict_atm_types))];
+    const isEnabled = enabledTypes.includes(atmType);
+    const noteEl = document.getElementById('ej-recycler-note');
+    if (noteEl) noteEl.textContent = isEnabled ? '' : `— select ${enabledTypes.join('/')} ATM type to enable`;
+
+    restrictedCases.forEach(c => {
+      const caseEnabled = c.restrict_atm_types.includes(atmType);
+      const wrapper = document.getElementById(`ej-case-${c.id}`);
+      const chk = document.getElementById(`ej-chk-${c.id}`);
+      if (wrapper) wrapper.style.opacity = caseEnabled ? '1' : '0.45';
+      if (chk) {
+        chk.disabled = !caseEnabled;
+        if (!caseEnabled) {
+          chk.checked = false;
+          ejSelectedCases.delete(c.id);
+        } else if (c.default && !ejSelectedCases.has(c.id) && !chk.checked) {
+          chk.checked = true;
+          ejSelectedCases.add(c.id);
+        }
+      }
+    });
+  }
+
   ejUpdateCaseCount();
+  ejRefreshSyncToggle(false);
 }
 
 async function runGenerateEJ() {
@@ -1055,21 +1249,45 @@ async function runGenerateEJ() {
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner"></div><span>Generating…</span>';
 
+  const bank_id          = document.getElementById('ej-bank').value;
   const atm_type        = document.getElementById('ej-atm-type').value;
   const tran_date       = document.getElementById('ej-tran-date').value;
   const num_transactions = parseInt(document.getElementById('ej-num-txns').value);
   const selected_cases  = [...ejSelectedCases];
 
+  const syncKey = ejSyncKey(atm_type);
+  const syncChk = document.getElementById('ej-sync-chk');
+  const syncWasChecked = !!(syncChk && syncChk.checked);
+  const prior = syncWasChecked ? ejSyncState[syncKey] : null;
+
+  const body = { atm_type, tran_date, num_transactions, selected_cases, bank_id };
+  if (prior) {
+    body.atm_id = prior.atm_id_suffix;
+    body.location = prior.location;
+    body.continuation = prior.continuation;
+  }
+
   try {
     const res = await fetch('/api/generate-ej', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ atm_type, tran_date, num_transactions, selected_cases, bank_id: 'sbi' }),
+      body: JSON.stringify(body),
     });
     const data = await res.json();
     if (!res.ok || data.error) throw new Error(data.error || 'Generation failed');
     ejLastResult = data;
     renderEJResults(data);
+
+    // Persist ending state for "sync with other files" continuity (IDFC vendors only)
+    if (ejCurrentVendor !== 'hyosung' && data.continuation && data.atm_id) {
+      ejSyncState[syncKey] = {
+        atm_id_full: data.atm_id,
+        atm_id_suffix: data.atm_id.slice(2),
+        location: data.location,
+        continuation: data.continuation,
+      };
+      ejRefreshSyncToggle(syncWasChecked);
+    }
   } catch(e) {
     errBox.textContent = '✗ ' + e.message;
     errBox.classList.remove('hidden');
@@ -1118,7 +1336,7 @@ function renderEJResults(data) {
     'declined_insufficient', 'declined_unauthorized', 'host_timeout',
     'cash_not_taken', 'notes_in_reject', 'partial_ej', 'admin_cassette',
     'unknown_notes', 'deposit_card', 'deposit_cardless', 'deposit_rejected',
-    'deposit_retracted', 'deposit_jam'];
+    'deposit_retracted', 'deposit_jam', 'simple_withdrawal'];
 
   allCaseIds.forEach(id => {
     const n = counts[id] || 0;

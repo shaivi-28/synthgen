@@ -20,6 +20,11 @@ from generators.idfc.orchestrator import generate_idfc_visa
 from generators.idfc.nfs_acq_orchestrator import generate_idfc_nfs_acq
 from generators.idfc.mc_orchestrator import generate_idfc_mc
 from generators.hyosung_ej import generate_hyosung_ej
+from generators.euronet_ej import generate_euronet_ej
+from generators.eps_ej import generate_eps_ej
+from generators.fss_ej import generate_fss_ej
+from generators.euronet_recycler_ej import generate_euronet_recycler_ej
+from generators.ncr_ej import generate_ncr_ej
 
 BASE_DIR = Path(__file__).parent
 OUTPUT_DIR = BASE_DIR / "output"
@@ -516,10 +521,22 @@ def run_generate_ej():
     tran_date_str    = data.get("tran_date", "")
     num_transactions = int(data.get("num_transactions", 50))
     selected_cases   = data.get("selected_cases", ["sync"])
-    bank_id          = data.get("bank_id", "sbi")  # currently only sbi
+    bank_id          = data.get("bank_id", "sbi")  # 'sbi' (Hyosung) or 'idfc' (EuroNet/EPS/FSS)
+    atm_id           = data.get("atm_id") or None
+    location         = data.get("location") or None
+    # "Sync with other files": internal continuity of TXN NO/RRN/session IDs
+    # across multiple files generated for the same ATM+day batch. Pass back
+    # the `continuation` object from a prior response (together with the same
+    # atm_id/location/tran_date) to keep numbering continuous instead of
+    # restarting at fresh random values.
+    continuation     = data.get("continuation") or None
 
-    if atm_type not in ("U1", "S5"):
-        return jsonify({"error": "atm_type must be 'U1' or 'S5'"}), 400
+    # ATM types are unique across vendors, so routing is keyed off atm_type:
+    #   U1/S5 -> Hyosung (SBI), EN -> EuroNet, PN/PR -> EPS, IN -> FSS,
+    #   ER -> EuroNet Recycler, NX -> NCR (IDFC)
+    valid_atm_types = ("U1", "S5", "EN", "PN", "PR", "IN", "ER", "NX")
+    if atm_type not in valid_atm_types:
+        return jsonify({"error": f"atm_type must be one of {', '.join(valid_atm_types)}"}), 400
     if num_transactions < 1 or num_transactions > 500:
         return jsonify({"error": "num_transactions must be between 1 and 500"}), 400
     if not selected_cases:
@@ -534,13 +551,65 @@ def run_generate_ej():
         tran_date = datetime.today()
 
     try:
-        result = generate_hyosung_ej(
-            atm_type=atm_type,
-            tran_date=tran_date,
-            num_transactions=num_transactions,
-            selected_cases=selected_cases,
-            output_dir=OUTPUT_DIR,
-        )
+        if atm_type == "EN":
+            result = generate_euronet_ej(
+                tran_date=tran_date,
+                num_transactions=num_transactions,
+                selected_cases=selected_cases,
+                atm_id=atm_id,
+                location=location,
+                output_dir=OUTPUT_DIR,
+                continuation=continuation,
+            )
+        elif atm_type in ("PN", "PR"):
+            result = generate_eps_ej(
+                atm_type=atm_type,
+                tran_date=tran_date,
+                num_transactions=num_transactions,
+                selected_cases=selected_cases,
+                atm_id=atm_id,
+                location=location,
+                output_dir=OUTPUT_DIR,
+                continuation=continuation,
+            )
+        elif atm_type == "IN":
+            result = generate_fss_ej(
+                tran_date=tran_date,
+                num_transactions=num_transactions,
+                selected_cases=selected_cases,
+                atm_id=atm_id,
+                location=location,
+                output_dir=OUTPUT_DIR,
+                continuation=continuation,
+            )
+        elif atm_type == "ER":
+            result = generate_euronet_recycler_ej(
+                tran_date=tran_date,
+                num_transactions=num_transactions,
+                selected_cases=selected_cases,
+                atm_id=atm_id,
+                location=location,
+                output_dir=OUTPUT_DIR,
+                continuation=continuation,
+            )
+        elif atm_type == "NX":
+            result = generate_ncr_ej(
+                tran_date=tran_date,
+                num_transactions=num_transactions,
+                selected_cases=selected_cases,
+                atm_id=atm_id,
+                location=location,
+                output_dir=OUTPUT_DIR,
+                continuation=continuation,
+            )
+        else:
+            result = generate_hyosung_ej(
+                atm_type=atm_type,
+                tran_date=tran_date,
+                num_transactions=num_transactions,
+                selected_cases=selected_cases,
+                output_dir=OUTPUT_DIR,
+            )
         return jsonify(result)
     except Exception as e:
         import traceback

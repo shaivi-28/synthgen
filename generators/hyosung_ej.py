@@ -2041,7 +2041,7 @@ def generate_hyosung_ej(
         "cases_included": [c for c in selected_cases if counts.get(c, 0) > 0],
     }
     manifest_path = output_dir / f"manifest_ej_{run_id}.json"
-    with open(manifest_path, "w") as f:
+    with open(manifest_path, "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2)
 
     return {

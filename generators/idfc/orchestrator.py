@@ -102,13 +102,13 @@ def _build_idfc_scenario_group(
 
 def _load_config(bank_id: str) -> dict:
     path = BASE_DIR / "banks" / bank_id / "config.yaml"
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
 def _load_use_case(use_case_id: str) -> dict:
     path = BASE_DIR / "use_cases" / f"{use_case_id}.yaml"
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
